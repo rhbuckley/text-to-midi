@@ -13,7 +13,7 @@ from transformers.models.gpt2 import GPT2LMHeadModel, GPT2Config
 # ================================================
 WANDB_PROJECT = "text-to-midi"
 WANDB_JOB_TYPE = "train"
-WANDB_MODE = "disabled"
+WANDB_MODE = "online"
 
 load_dotenv()
 wandb.login(key=os.getenv("WANDB_API_KEY"))
