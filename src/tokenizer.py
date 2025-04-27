@@ -329,6 +329,20 @@ class MidiTokenizer:
         
         return events
     
+    def save_pretrained(self, output_dir):
+        self.tokenizer.save_pretrained(output_dir)
+
+    def load_pretrained(self, input_dir):
+        self.tokenizer = AutoTokenizer.from_pretrained(input_dir)
+    
     @property
     def eos_token_id(self):
         return self.tokenizer.eos_token_id
+    
+    @property
+    def pad_token_id(self):
+        return self.tokenizer.pad_token_id
+
+    @property
+    def vocab_size(self):
+        return len(self.tokenizer)
