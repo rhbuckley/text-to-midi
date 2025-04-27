@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --partition=gpu             # Request the GPU partition
+#SBATCH --partition=uri-gpu         # Request the GPU partition
 #SBATCH --cpus-per-task=8           # Request CPUs (adjust based on data loading/needs)
-#SBATCH --mem=24G                   # Request memory (e.g., 24GB); adjust as needed
+#SBATCH --mem=32G                   # Request memory (e.g., 24GB); adjust as needed
 #SBATCH --time=1-00:00:00           # Max wall time (e.g., 1 day); adjust as needed
-#SBATCH --gres=gpu:v100:1           # 1x V100 GPU
+#SBATCH --gres=gpu:l40s:1           # 1x V100 GPU
 
 # Output and Error Log Files (%j will be replaced by the job ID)
 #SBATCH --output=slurm_logs/midi_train_%j.log
