@@ -37,7 +37,7 @@ if WANDB_MODE != "disabled":
 # ================================================
 CONFIG = {
     "epochs": 20,
-    "batch_size": 64, # Adjust based on GPU memory
+    "batch_size": 8, # Adjust based on GPU memory
     "learning_rate": 1e-4, # Common starting point for fine-tuning transformers
     "weight_decay": 0.01,
     "max_length": 1024, # Max sequence length for model and tokenizer
@@ -48,7 +48,7 @@ CONFIG = {
     "num_workers": 4,       # Number of workers for DataLoader (adjust based on CPU cores)
     "lr_scheduler_type": "linear", # Type of learning rate scheduler
     "warmup_steps": 500,         # Steps for learning rate warmup
-    "gradient_accumulation_steps": 1, # Accumulate gradients over N steps (effective batch size = batch_size * grad_accum)
+    "gradient_accumulation_steps": 8, # Accumulate gradients over N steps (effective batch size = batch_size * grad_accum)
     "save_best_model": True, # Save checkpoint only when validation loss improves
 }
 
@@ -296,13 +296,9 @@ class TextToMIDIModel:
 
                   # Data is already on device from collate_fn if implemented that way,
                   # otherwise move batch items to device here.
-                  # input_ids = batch['input_ids'].to(device)
-                  # attention_mask = batch['attention_mask'].to(device)
-                  # labels = batch['labels'].to(device)
-                  # Assuming collate_fn puts tensors on the correct device:
-                  input_ids = batch['input_ids']
-                  attention_mask = batch['attention_mask']
-                  labels = batch['labels']
+                  input_ids = batch['input_ids'].to(device)
+                  attention_mask = batch['attention_mask'].to(device)
+                  labels = batch['labels'].to(device)
 
                   try:
                        outputs = self.model(
