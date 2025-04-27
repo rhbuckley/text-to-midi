@@ -1,11 +1,5 @@
-#----------------------------------------------------------
-# SLURM Settings - UMASS Unity Cluster (Adjust as needed!)
-#----------------------------------------------------------
-
-# Job Name
-#SBATCH --nodes=1                   # Request a single node
-#SBATCH --ntasks=1                  # Run a single task (your Python script)
-#SBATCH --partition=uri-gpu         # Request the GPU partition
+#!/bin/bash
+#SBATCH --partition=gpu             # Request the GPU partition
 #SBATCH --cpus-per-task=8           # Request CPUs (adjust based on data loading/needs)
 #SBATCH --mem=32G                   # Request memory (e.g., 32GB); adjust as needed
 #SBATCH --time=1-00:00:00           # Max wall time (e.g., 1 day); adjust as needed
