@@ -28,11 +28,11 @@ mkdir -p slurm_logs
 
 module load cuda/12.1
 module load python/3.12
+module load conda/latest
 module load ffmpeg/7.0.2
-source venv/bin/activate
 
 # --- Activate Conda Environment ---
-source venv/bin/activate
+conda activate text2midi
 
 # --- Run the Training Script ---
 python -m src.model

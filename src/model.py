@@ -24,7 +24,7 @@ wandb.login(key=os.getenv("WANDB_API_KEY"))
 # process.
 # ================================================
 CONFIG = {
-    "epochs": 15, # number of epochs to train the model
+    "epochs": 20, # number of epochs to train the model
     "batch_size": 16, # number of samples per batch
     "learning_rate": 0.0001, # learning rate for the optimizer
     "weight_decay": 0.01, # weight decay for the optimizer
