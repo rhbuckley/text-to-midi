@@ -9,7 +9,13 @@ wheels/
 # Virtual environments
 .venv
 
+# Files
+lmd_full/*
+*.tar.gz
+*.wav
+*.mp3
+*.mid
+
 # Other Data
 *.env
-lmd_full/*
 *.tar.gz

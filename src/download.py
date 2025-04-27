@@ -90,3 +90,9 @@ class MidiCaps(torch.utils.data.Dataset):
 
         # Return the caption string and the full PATH string to the MIDI file
         return caption, full_midi_path
+
+
+if __name__ == "__main__":
+    print("Downloading dataset...")
+    midi_caps = MidiCaps(None)
+    print("Dataset downloaded successfully.")

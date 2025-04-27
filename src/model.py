@@ -2,6 +2,7 @@ import os
 import torch
 from tqdm import tqdm
 import wandb
+import random
 from dotenv import load_dotenv
 from src.midi_utils import midi_to_mp3
 from src.tokenizer import MidiTokenizer
@@ -12,7 +13,7 @@ from transformers.models.gpt2 import GPT2LMHeadModel, GPT2Config
 # ================================================
 WANDB_PROJECT = "text-to-midi"
 WANDB_JOB_TYPE = "train"
-WANDB_MODE = "online"
+WANDB_MODE = "disabled"
 
 load_dotenv()
 wandb.login(key=os.getenv("WANDB_API_KEY"))
@@ -23,7 +24,7 @@ wandb.login(key=os.getenv("WANDB_API_KEY"))
 # process.
 # ================================================
 CONFIG = {
-    "epochs": 5, # number of epochs to train the model
+    "epochs": 15, # number of epochs to train the model
     "batch_size": 16, # number of samples per batch
     "learning_rate": 0.0001, # learning rate for the optimizer
     "weight_decay": 0.01, # weight decay for the optimizer
@@ -44,11 +45,11 @@ device = torch.device(
 )
 
 class TextToMIDIModel:
-    def __init__(self, model_path=None):
+    def __init__(self, model_path=None, from_pretrained=None):
         self.tokenizer = MidiTokenizer(CONFIG["max_length"])
 
-        if model_path and os.path.exists(model_path):
-            self.model = GPT2LMHeadModel.from_pretrained(model_path)
+        if from_pretrained:
+            self.model = GPT2LMHeadModel.from_pretrained(from_pretrained)
         else:
             config = GPT2Config(
                 vocab_size=50277,  # Size of the vocabulary (number of unique tokens). Increased from default 50257 to accommodate additional music-specific tokens
@@ -63,13 +64,33 @@ class TextToMIDIModel:
         self.model.resize_token_embeddings(len(self.tokenizer))
         self.model.to(device)  # type: ignore
 
-    def generate_midi(self, prompt, max_length=100, temperature=0.7):
+        if model_path:
+            self.model.load_state_dict(torch.load(model_path, map_location=device))
+
+        assert not (model_path and from_pretrained), "Cannot provide both model_path and from_pretrained"
+
+    def generate_midi(self, prompt, max_length=1024, temperature=0.7):
+        # Ensure your tokenize method returns attention_mask
         tokenized_output = self.tokenizer.tokenize(prompt)
-        input_ids_tensor = tokenized_output.input_ids.to(device)
+
+        # Check if tokenized_output contains the expected keys 'input_ids', 'attention_mask'
+        # Directly attempt to access the keys. This is more robust
+        # than checking the type first, as HF tokenizer outputs
+        # might be custom objects that behave like dicts.
+        try:
+            input_ids_tensor = tokenized_output['input_ids'].to(device)  # type: ignore
+            attention_mask_tensor = tokenized_output['attention_mask'].to(device)  # type: ignore
+        except (TypeError, KeyError) as e:
+            print(f"Error accessing input_ids or attention_mask from tokenizer output: {e}")
+            return None
+        
+        input_ids_tensor = tokenized_output['input_ids'].to(device)  # type: ignore
+        attention_mask_tensor = tokenized_output['attention_mask'].to(device) # type: ignore
 
         # generate output
         output = self.model.generate(
-            input_ids_tensor,  # type: ignore
+            input_ids=input_ids_tensor,
+            attention_mask=attention_mask_tensor,
             max_length=max_length,
             temperature=temperature,
             do_sample=True,
@@ -78,14 +99,14 @@ class TextToMIDIModel:
             pad_token_id=self.tokenizer.eos_token_id
         )
 
-        # decode output
         try:
+            # Ensure detokenize_to_file handles tensor input correctly
             self.tokenizer.detokenize_to_file(output[0], "output.mid")
             midi_to_mp3("output.mid", "output.mp3")
-            return "output.mp3"
+            return "output.mp3", self.tokenizer.detokenize(output[0], return_strings=True)
         except Exception as e:
-            # we don't want to interrupt the training process, so we just print the error
             print(f"Failed to generate MIDI from text: {e}")
+            return None, None # Return None on failure
 
     def train(self, text_to_midi_pairs):
         # Initialize wandb run
@@ -103,16 +124,21 @@ class TextToMIDIModel:
             weight_decay=CONFIG["weight_decay"]
         )
 
+        # Convert text_to_midi_pairs to list if it's not already
+        pairs_list = list(text_to_midi_pairs)
+        total_pairs = len(pairs_list)
+        print(f"Total available pairs: {total_pairs}")
+
         # --- Outer loop for epochs with tqdm ---
         for epoch in tqdm(range(CONFIG["epochs"]), desc="Training Epochs"):
             total_loss = 0
-            num_processed = 0 # Keep track of successfully processed items
+            num_processed = 0
+
+            # Randomly sample 10000 pairs for this epoch
+            epoch_pairs = random.sample(pairs_list, min(10000, total_pairs))
 
             # --- Inner loop for data pairs with tqdm ---
-            # NOTE: This assumes text_to_midi_pairs is an iterable like a list or Dataset.
-            # If using a DataLoader for batching, you'd wrap the DataLoader instead.
-            # The current code processes item by item, not by batches as CONFIG suggests.
-            progress_bar = tqdm(text_to_midi_pairs, desc=f"Epoch {epoch+1}/{CONFIG['epochs']}", unit="pair", leave=False)
+            progress_bar = tqdm(epoch_pairs, desc=f"Epoch {epoch+1}/{CONFIG['epochs']}", unit="pair", leave=False)
             for text, midi_file_path in progress_bar: # Assuming it yields path now
                 # 1. Tokenize (on CPU)
                 # This takes the string prompt and the string path to the MIDI file
@@ -200,7 +226,11 @@ class TextToMIDIModel:
             # Set model to eval mode for generation
             self.model.eval()
             with torch.no_grad(): # Disable gradient calculation for generation
-                 generated_mp3_path = self.generate_midi("A happy song about a frog") # Using a fixed prompt for sampling
+                 generated_mp3_path = None
+                 generated_midi_strings = None
+                 ret = self.generate_midi("A happy song about a frog") # Using a fixed prompt for sampling
+                 if ret is not None:
+                    generated_mp3_path, generated_midi_strings = ret
 
             # Set model back to train mode
             self.model.train()
@@ -210,6 +240,7 @@ class TextToMIDIModel:
                     print(f"Logging generated audio: {generated_mp3_path}")
                     audio = wandb.Audio(generated_mp3_path, caption=f"Sample Audio Epoch {epoch+1}")
                     run.log({"sample_audio": audio}) # Use a distinct key like "sample_audio"
+                    run.log({"sample_midi": generated_midi_strings})
                 except Exception as audio_e:
                     print(f"Error logging generated audio to W&B: {audio_e}")
             elif generated_mp3_path:
@@ -221,11 +252,11 @@ class TextToMIDIModel:
         print("Training finished.")
         if run:
              wandb.finish()
-            
-            
+
+
 if __name__ == "__main__":
     from src.download import MidiCaps
 
-    model = TextToMIDIModel()
+    model = TextToMIDIModel(from_pretrained="gpt2")
     dataset = MidiCaps(tokenizer=model.tokenizer)
     model.train(dataset)

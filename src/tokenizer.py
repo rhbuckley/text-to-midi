@@ -62,7 +62,7 @@ class MidiTokenizer:
     def __len__(self):
         return len(self.tokenizer)
 
-    def tokenize(self, text, midi_seq = None):
+    def tokenize(self, text, midi_seq = None, max_length=None):
         """
         Convert a MIDI sequence into a sequence of tokens.
         
@@ -77,9 +77,20 @@ class MidiTokenizer:
         else:
             midi = self._midi_to_tokens(midi_seq)
             input_text = text + " " + NOTE_TOKEN + " " + midi + " " + self.tokenizer.eos_token
-        return self.tokenizer(input_text, return_tensors="pt", max_length=self.max_length, truncation=True)
+        
+        # If max_length is provided, use it, otherwise use the default max_length
+        max_len = max_length if max_length is not None else self.max_length
 
-    def detokenize(self, tokens):
+        return self.tokenizer(
+            input_text, 
+            return_tensors="pt", 
+            max_length=max_len, 
+            padding="max_length",
+            truncation=True,
+            return_attention_mask=True
+        )
+
+    def detokenize(self, tokens, debug=False, return_strings=False):
         """
         Convert a sequence of tokens back into a MIDI sequence.
         
@@ -89,7 +100,13 @@ class MidiTokenizer:
         Returns:
             A list of MIDI events containing pitch, velocity, time, and duration
         """
-        token_strings = self.tokenizer.convert_ids_to_tokens(tokens) # Get the list of strings
+        token_strings = self.tokenizer.convert_ids_to_tokens(tokens)
+        
+        if debug:
+            print(token_strings)
+            
+        if return_strings:
+            return token_strings
 
         midi_sequence = self._tokens_to_midi(token_strings)
         return midi_sequence
@@ -315,5 +332,3 @@ class MidiTokenizer:
     @property
     def eos_token_id(self):
         return self.tokenizer.eos_token_id
-
-        
