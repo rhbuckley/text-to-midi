@@ -111,7 +111,7 @@ class MidiTokenizer:
         midi_sequence = self._tokens_to_midi(token_strings)
         return midi_sequence
     
-    def tokenize_from_file(self, text, midi_file):
+    def tokenize_from_file(self, text, midi_file, max_length=None):
         """
         Read a MIDI file, parse it into a note sequence with durations,
         and convert it into tokens suitable for the model.
@@ -138,7 +138,7 @@ class MidiTokenizer:
 
         # Pass the parsed sequence to the main tokenize method
         # Ensure the main tokenize method handles the midi_seq correctly
-        return self.tokenize(text, midi_seq=midi_seq)
+        return self.tokenize(text, midi_seq=midi_seq, max_length=max_length)
     
     def detokenize_to_file(self, tokens, midi_file):
         """

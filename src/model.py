@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from transformers.models.gpt2 import GPT2LMHeadModel, GPT2Config
 from transformers.optimization import get_scheduler # For learning rate scheduling (optional but good)
 
-# Assuming these exist in your src directory
 from src.midi_utils import midi_to_mp3
 from src.tokenizer import MidiTokenizer
 from src.download import MidiCaps # Assuming MidiCaps is a torch.utils.data.Dataset
@@ -20,7 +19,7 @@ from src.download import MidiCaps # Assuming MidiCaps is a torch.utils.data.Data
 # ================================================
 WANDB_PROJECT = "text-to-midi-refactored" # Consider a new project name
 WANDB_JOB_TYPE = "train"
-WANDB_MODE = "online" # Set to "disabled" to turn off wandb
+WANDB_MODE = "disabled" # Set to "disabled" to turn off wandb
 
 # Load API Key only if W&B is enabled
 if WANDB_MODE != "disabled":
@@ -76,10 +75,16 @@ else:
     print("Using CPU")
 
 class CollateFn:
+    tokenizer: MidiTokenizer
+
     def __init__(self, tokenizer, max_length, device):
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.device = device
+        # Ensure pad_token_id is an integer
+        if not isinstance(self.tokenizer.pad_token_id, int):
+            raise ValueError("Tokenizer pad_token_id must be an integer")
+        self.pad_token_id = int(self.tokenizer.pad_token_id)  # Ensure it's an integer
 
     def __call__(self, batch):
         # Assuming batch is a list of (text, midi_file_path) tuples
@@ -98,9 +103,9 @@ class CollateFn:
 
                 if tokenized_output is not None and 'input_ids' in tokenized_output and 'attention_mask' in tokenized_output:
                     # Ensure tensors before padding
-                    input_ids = torch.tensor(tokenized_output['input_ids'], dtype=torch.long)
-                    attention_mask = torch.tensor(tokenized_output['attention_mask'], dtype=torch.long)
-
+                    input_ids = tokenized_output.input_ids.detach().clone().long()
+                    attention_mask = tokenized_output.attention_mask.detach().clone().long()
+                    
                     # Truncate if necessary
                     if len(input_ids) > self.max_length:
                         input_ids = input_ids[:self.max_length]
@@ -127,12 +132,12 @@ class CollateFn:
         for ids, mask in zip(batch_input_ids, batch_attention_masks):
             padding_length = current_max_len - len(ids)
             if padding_length > 0:
-                # Pad using the tokenizer's pad_token_id
-                pad_tensor = torch.full((padding_length,), self.tokenizer.pad_token_id, dtype=ids.dtype)
+                # Pad using the tokenizer's pad_token_id (which we know is an integer)
+                pad_tensor = torch.full((padding_length,), self.pad_token_id, dtype=torch.long)
                 padded_ids = torch.cat([ids, pad_tensor])
 
                 # Pad attention mask with 0
-                mask_pad_tensor = torch.zeros(padding_length, dtype=mask.dtype)
+                mask_pad_tensor = torch.zeros(padding_length, dtype=torch.long)
                 padded_mask = torch.cat([mask, mask_pad_tensor])
             else:
                 padded_ids = ids
@@ -141,19 +146,20 @@ class CollateFn:
             padded_input_ids.append(padded_ids)
             padded_attention_masks.append(padded_mask)
 
-        # Stack tensors for the batch
-        input_ids_tensor = torch.stack(padded_input_ids).to(self.device)
-        attention_mask_tensor = torch.stack(padded_attention_masks).to(self.device)
+        # Stack tensors for the batch (keep on CPU for multiprocessing)
+        input_ids_tensor = torch.stack(padded_input_ids)
+        attention_mask_tensor = torch.stack(padded_attention_masks)
 
         # Labels are the same as input_ids for LM training
         labels = input_ids_tensor.clone()
         # Ignore padding tokens in loss calculation
-        labels[labels == self.tokenizer.pad_token_id] = -100
+        labels[labels == self.pad_token_id] = -100
 
+        # Move to device only after all processing is done
         return {
-            "input_ids": input_ids_tensor,
-            "attention_mask": attention_mask_tensor,
-            "labels": labels
+            "input_ids": input_ids_tensor.to(torch.device("cpu")),
+            "attention_mask": attention_mask_tensor.to(torch.device("cpu")),
+            "labels": labels.to(torch.device("cpu"))
         }
 
 class TextToMIDIModel:
@@ -328,6 +334,7 @@ class TextToMIDIModel:
              config=self.config, # Log hyperparameters
              mode=WANDB_MODE
         )
+
         if run is None and WANDB_MODE != "disabled":
              print("Warning: wandb.init() returned None despite mode='online'. Check W&B setup/connection.")
 
@@ -406,9 +413,9 @@ class TextToMIDIModel:
                 # attention_mask = batch['attention_mask'].to(device)
                 # labels = batch['labels'].to(device)
                 # Assuming collate_fn puts tensors on the correct device:
-                input_ids = batch['input_ids']
-                attention_mask = batch['attention_mask']
-                labels = batch['labels']
+                input_ids = batch['input_ids'].to(device)
+                attention_mask = batch['attention_mask'].to(device)
+                labels = batch['labels'].to(device)
 
                 try:
                     # Forward pass

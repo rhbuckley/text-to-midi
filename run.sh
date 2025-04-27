@@ -20,7 +20,7 @@
 # Create log directory if it doesn't exist
 mkdir -p slurm_logs
 
-module load cuda/12.1{}
+module load cuda/12.1
 module load python/3.12
 module load conda/latest
 module load ffmpeg/7.0.2
