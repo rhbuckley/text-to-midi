@@ -20,7 +20,7 @@ from src.download import MidiCaps # Assuming MidiCaps is a torch.utils.data.Data
 # ================================================
 WANDB_PROJECT = "text-to-midi-refactored" # Consider a new project name
 WANDB_JOB_TYPE = "train"
-WANDB_MODE = "disabled" # Set to "disabled" to turn off wandb
+WANDB_MODE = "online" # Set to "disabled" to turn off wandb
 
 # Load API Key only if W&B is enabled
 if WANDB_MODE != "disabled":
