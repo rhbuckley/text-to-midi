@@ -38,7 +38,7 @@ class Config(TypedDict):
 CONFIG: Config = {
     "wandb_project": "text2midi",       # Project name for W&B
     "wandb_job_type": "train",          # Job type for W&B
-    "wandb_mode": "online",           # Mode for W&B
+    "wandb_mode": "online",             # Mode for W&B
 
     "epochs": 20,				        # Number of training epochs
     "batch_size": 8,				    # Size of the training batch

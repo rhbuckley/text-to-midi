@@ -1,6 +1,7 @@
 import math
 import os
 import random
+from typing import Any
 import torch
 import wandb
 from tqdm.auto import tqdm
@@ -11,45 +12,136 @@ from src.model import TextToMIDIModel, device
 from transformers.optimization import get_scheduler
 from torch.utils.data import random_split, DataLoader
 
-class CollateFn:
-    tokenizer: MidiTokenizer
+# class CollateFn:
+#     tokenizer: MidiTokenizer
 
+#     def __init__(self, tokenizer, max_length, device):
+#         self.tokenizer = tokenizer
+#         self.max_length = max_length
+#         self.device = device
+
+#         assert isinstance(self.tokenizer.pad_token_id, int), "Tokenizer pad_token_id must be an integer"
+#         self.pad_token_id = int(self.tokenizer.pad_token_id)
+
+#     def __call__(self, batch):
+#         batch_input_ids = []
+#         batch_attention_masks = []
+#         valid_indices = [] # Keep track of successfully tokenized items
+
+#         for i, (text, path) in enumerate(batch):
+#             try:
+#                 # Tokenize directly here. Assumes tokenize_from_file handles text+MIDI
+#                 # and returns {'input_ids': tensor, 'attention_mask': tensor}
+#                 tokenized_output = self.tokenizer.tokenize_from_file(text, path, max_length=self.max_length)
+
+#                 if tokenized_output is None or 'input_ids' not in tokenized_output or 'attention_mask' not in tokenized_output:
+#                     print(f"Warning: Skipping invalid tokenized output for item {i} (Text: '{text}', Path: '{path}')")
+#                     continue
+
+#                 # Ensure tensors before padding
+#                 input_ids = tokenized_output['input_ids'].detach().clone().long()  # type: ignore
+#                 attention_mask = tokenized_output['attention_mask'].detach().clone().long()  # type: ignore
+                
+#                 # Apply squeeze(0) only if tensor is 2D and first dim is 1
+#                 if input_ids.ndim == 2 and input_ids.shape[0] == 1:
+#                     input_ids = input_ids.squeeze(0)
+
+#                 if attention_mask.ndim == 2 and attention_mask.shape[0] == 1:
+#                     attention_mask = attention_mask.squeeze(0)
+
+#                 batch_input_ids.append(input_ids)
+#                 batch_attention_masks.append(attention_mask)
+#                 valid_indices.append(i)
+
+#             except Exception as e:
+#                 print(f"Warning: Error tokenizing item {i} (Text: '{text}', Path: '{path}'): {e}. Skipping.")
+#                 continue
+
+#         if not batch_input_ids:
+#             return None
+
+#         # Pad sequences within the batch
+#         current_max_len = max(len(ids) for ids in batch_input_ids)
+
+#         padded_input_ids = []
+#         padded_attention_masks = []
+
+#         for ids, mask in zip(batch_input_ids, batch_attention_masks):
+#             padding_length = current_max_len - len(ids)
+#             if padding_length > 0:
+#                 # Pad using the tokenizer's pad_token_id
+#                 pad_tensor = torch.full((padding_length,), self.pad_token_id, dtype=torch.long)
+#                 padded_ids = torch.cat([ids, pad_tensor])
+
+#                 # Pad attention mask with 0
+#                 mask_pad_tensor = torch.zeros(padding_length, dtype=torch.long)
+#                 padded_mask = torch.cat([mask, mask_pad_tensor])
+#             else:
+#                 padded_ids = ids
+#                 padded_mask = mask
+
+#             padded_input_ids.append(padded_ids)
+#             padded_attention_masks.append(padded_mask)
+
+#         # Stack tensors for the batch (keep on CPU for multiprocessing)
+#         input_ids_tensor = torch.stack(padded_input_ids)
+#         attention_mask_tensor = torch.stack(padded_attention_masks)
+
+#         # Labels are the same as input_ids for LM training
+#         labels = input_ids_tensor.clone()
+
+#         # Ignore padding tokens in loss calculation
+#         labels[labels == self.pad_token_id] = -100
+
+#         # Move to device in training loop
+#         return {
+#             "input_ids": input_ids_tensor,
+#             "attention_mask": attention_mask_tensor,
+#             "labels": labels
+#         }
+
+
+class CollateFn:
     def __init__(self, tokenizer, max_length, device):
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.device = device
 
-        assert isinstance(self.tokenizer.pad_token_id, int), "Tokenizer pad_token_id must be an integer"
-        self.pad_token_id = int(self.tokenizer.pad_token_id)
-
     def __call__(self, batch):
+        # Assuming batch is a list of (text, midi_file_path) tuples
+        texts = [item[0] for item in batch]
+        midi_paths = [item[1] for item in batch]
+
         batch_input_ids = []
         batch_attention_masks = []
         valid_indices = [] # Keep track of successfully tokenized items
 
-        for i, (text, path) in enumerate(batch):
+        for i, (text, path) in enumerate(zip(texts, midi_paths)):
             try:
                 # Tokenize directly here. Assumes tokenize_from_file handles text+MIDI
                 # and returns {'input_ids': tensor, 'attention_mask': tensor}
                 tokenized_output = self.tokenizer.tokenize_from_file(text, path, max_length=self.max_length)
 
-                if tokenized_output is None or 'input_ids' not in tokenized_output or 'attention_mask' not in tokenized_output:
+                if tokenized_output is not None and 'input_ids' in tokenized_output and 'attention_mask' in tokenized_output:
+                    # Ensure tensors before padding
+                    input_ids = tokenized_output['input_ids'].detach().cpu().long()
+                    attention_mask = tokenized_output['attention_mask'].detach().cpu().long()
+
+                    # Truncate if necessary
+                    if len(input_ids) > self.max_length:
+                        input_ids = input_ids[:self.max_length]
+                        attention_mask = attention_mask[:self.max_length]
+
+                    batch_input_ids.append(input_ids)
+                    batch_attention_masks.append(attention_mask)
+                    valid_indices.append(i)
+                else:
                     print(f"Warning: Skipping invalid tokenized output for item {i} (Text: '{text}', Path: '{path}')")
-                    continue
-
-                # Ensure tensors before padding
-                input_ids = tokenized_output['input_ids'].detach().clone().long()  # type: ignore
-                attention_mask = tokenized_output['attention_mask'].detach().clone().long()  # type: ignore
-                
-                batch_input_ids.append(input_ids)
-                batch_attention_masks.append(attention_mask)
-                valid_indices.append(i)
-
             except Exception as e:
                 print(f"Warning: Error tokenizing item {i} (Text: '{text}', Path: '{path}'): {e}. Skipping.")
                 continue
 
-        if not batch_input_ids:
+        if not batch_input_ids: # If no items in batch were valid
             return None
 
         # Pad sequences within the batch
@@ -62,11 +154,11 @@ class CollateFn:
             padding_length = current_max_len - len(ids)
             if padding_length > 0:
                 # Pad using the tokenizer's pad_token_id
-                pad_tensor = torch.full((padding_length,), self.pad_token_id, dtype=torch.long)
+                pad_tensor = torch.full((padding_length,), self.tokenizer.pad_token_id, dtype=ids.dtype)
                 padded_ids = torch.cat([ids, pad_tensor])
 
                 # Pad attention mask with 0
-                mask_pad_tensor = torch.zeros(padding_length, dtype=torch.long)
+                mask_pad_tensor = torch.zeros(padding_length, dtype=mask.dtype)
                 padded_mask = torch.cat([mask, mask_pad_tensor])
             else:
                 padded_ids = ids
@@ -75,17 +167,15 @@ class CollateFn:
             padded_input_ids.append(padded_ids)
             padded_attention_masks.append(padded_mask)
 
-        # Stack tensors for the batch (keep on CPU for multiprocessing)
+        # Stack tensors for the batch
         input_ids_tensor = torch.stack(padded_input_ids)
         attention_mask_tensor = torch.stack(padded_attention_masks)
 
         # Labels are the same as input_ids for LM training
         labels = input_ids_tensor.clone()
-
         # Ignore padding tokens in loss calculation
-        labels[labels == self.pad_token_id] = -100
+        labels[labels == self.tokenizer.pad_token_id] = -100
 
-        # Move to device in training loop
         return {
             "input_ids": input_ids_tensor,
             "attention_mask": attention_mask_tensor,
@@ -101,7 +191,8 @@ if __name__ == "__main__":
 
     # --- Initialize Model ---
     model = TextToMIDIModel(from_pretrained="gpt2", config=CONFIG["model_config"])
-
+    tokenizer = model.tokenizer
+    
     # --- Load and Prepare Dataset ---
     dataset = MidiCaps(tokenizer=model.tokenizer)
 
@@ -125,7 +216,7 @@ if __name__ == "__main__":
 
     # --- Create Collate Function ---
     collate_fn = CollateFn(
-        tokenizer=model.tokenizer, 
+        tokenizer=tokenizer, 
         max_length=CONFIG["model_config"]["max_length"], 
         device=device
     )
@@ -198,9 +289,9 @@ if __name__ == "__main__":
         num_train_batches = 0
 
         progress_bar = tqdm(
-                train_dataloader,
-                desc=f"Epoch {epoch+1}/{CONFIG['epochs']} Training",
-                unit="batch"
+            train_dataloader,
+            desc=f"Epoch {epoch+1}/{CONFIG['epochs']} Training",
+            unit="batch"
         )
         
         for step, batch in enumerate(progress_bar):
@@ -213,13 +304,15 @@ if __name__ == "__main__":
 
             try:
                 # Forward pass
-                outputs = model(
+                outputs = model.forward(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
                     labels=labels
                 )
                 
-                loss = outputs.loss
+                loss: Any = outputs.loss  # type: ignore
+                assert loss is not None, "Loss is None"
+
                 if loss is None:
                     print(f"Warning: Loss is None for step {step}. Skipping batch.")
                     continue
@@ -288,13 +381,15 @@ if __name__ == "__main__":
             labels = batch['labels'].to(device)
 
             with torch.no_grad():
-                outputs = model(
+                outputs = model.forward(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
                     labels=labels
                 )
 
-                loss = outputs.loss
+                loss: Any = outputs.loss  # type: ignore
+                assert loss is not None, "Loss is None"
+
                 if loss is None:
                     print(f"Warning: Loss is None for step {step}. Skipping batch.")
                     continue

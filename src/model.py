@@ -76,6 +76,7 @@ class TextToMIDIModel:
                 
                 # Add the id of the end of sequence token
                 eos_token_id=self.tokenizer.eos_token_id,
+                pad_token_id=self.tokenizer.pad_token_id,
             )
 
             # No need to resize if initializing from scratch with correct vocab size
@@ -112,10 +113,10 @@ class TextToMIDIModel:
         # ================================================
 
     def __call__(self, input_ids, attention_mask=None, labels=None):
-        return self.model(input_ids, attention_mask, labels)
+        return self.model.forward(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
     
     def forward(self, input_ids, attention_mask=None, labels=None):
-        return self.model(input_ids, attention_mask, labels)
+        return self.model.forward(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
     
     def generate(self, 
                  prompt: str, 
