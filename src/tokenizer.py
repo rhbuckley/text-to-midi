@@ -62,7 +62,7 @@ class MidiTokenizer:
     def __len__(self):
         return len(self.tokenizer)
 
-    def tokenize(self, text, midi_seq = None, max_length=None):
+    def tokenize(self, text, midi_seq = None, max_length=None, max_new_tokens=None):
         """
         Convert a MIDI sequence into a sequence of tokens.
         
@@ -80,6 +80,14 @@ class MidiTokenizer:
         
         # If max_length is provided, use it, otherwise use the default max_length
         max_len = max_length if max_length is not None else self.max_length
+
+        if max_new_tokens is not None:
+            return self.tokenizer(
+                input_text,
+                return_tensors="pt",
+                return_attention_mask=True,
+                max_new_tokens=max_new_tokens
+            )
 
         return self.tokenizer(
             input_text, 
@@ -111,7 +119,7 @@ class MidiTokenizer:
         midi_sequence = self._tokens_to_midi(token_strings)
         return midi_sequence
     
-    def tokenize_from_file(self, text, midi_file, max_length=None):
+    def tokenize_from_file(self, text, midi_file, max_length=None, max_new_tokens=None):
         """
         Read a MIDI file, parse it into a note sequence with durations,
         and convert it into tokens suitable for the model.
@@ -138,7 +146,7 @@ class MidiTokenizer:
 
         # Pass the parsed sequence to the main tokenize method
         # Ensure the main tokenize method handles the midi_seq correctly
-        return self.tokenize(text, midi_seq=midi_seq, max_length=max_length)
+        return self.tokenize(text, midi_seq=midi_seq, max_length=max_length, max_new_tokens=max_new_tokens)
     
     def detokenize_to_file(self, tokens, midi_file):
         """
@@ -336,13 +344,15 @@ class MidiTokenizer:
         self.tokenizer = AutoTokenizer.from_pretrained(input_dir)
     
     @property
-    def eos_token_id(self):
+    def eos_token_id(self) -> int:
+        assert type(self.tokenizer.eos_token_id) == int
         return self.tokenizer.eos_token_id
     
     @property
-    def pad_token_id(self):
+    def pad_token_id(self) -> int:
+        assert type(self.tokenizer.pad_token_id) == int
         return self.tokenizer.pad_token_id
 
     @property
-    def vocab_size(self):
+    def vocab_size(self) -> int:
         return len(self.tokenizer)
