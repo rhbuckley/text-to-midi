@@ -144,7 +144,7 @@ class TextToMIDIModel:
         top_p = top_p or self.config["top_p"]
 
         # Tokenize the prompt
-        tokenized = self.tokenizer.tokenize(prompt, max_new_tokens=max_length)
+        tokenized = self.tokenizer.tokenize(prompt)
         input_ids_tensor = tokenized["input_ids"].detach().cpu().long().to(device)  # type: ignore
         attention_mask_tensor = tokenized["attention_mask"].detach().cpu().long().to(device)  # type: ignore
 

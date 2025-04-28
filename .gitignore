@@ -19,3 +19,6 @@ lmd_full/*
 # Other Data
 *.env
 *.tar.gz
+
+# Checkpoints
+checkpoint*

@@ -57,7 +57,7 @@ CONFIG: Config = {
         "top_k": 50,				    # Top-k sampling parameter
         "top_p": 0.9,				    # Top-p (nucleus) sampling parameter
         "n_embd": 768,				    # Dimensionality of the embeddings and hidden states
-        "n_layer": 6,				    # Number of transformer layers
+        "n_layer": 12,				    # Number of transformer layers
         "n_head": 12,				    # Number of attention heads
         "output": "generated_midi"		# Path to save the generated MIDI file
     },
