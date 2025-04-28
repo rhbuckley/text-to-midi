@@ -29,4 +29,4 @@ module load ffmpeg/7.0.2
 conda activate text2midi
 
 # --- Run the Training Script ---
-python -m src.model
+python -m src.train
