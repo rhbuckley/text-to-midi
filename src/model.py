@@ -36,8 +36,6 @@ device = torch.device(
 # ================================================
 
 class TextToMIDIModel:
-    __call__: Callable
-
     def __init__(self, 
                  config: ModelConfig, 
                  from_model_path: Optional[str] = None, 
@@ -113,8 +111,11 @@ class TextToMIDIModel:
         # Override the __call__ method to return a CausalLMOutputWithPast
         # ================================================
 
-        self.__call__ = self.model.__call__
-        self.forward = self.model.forward
+    def __call__(self, input_ids, attention_mask=None, labels=None):
+        return self.model(input_ids, attention_mask, labels)
+    
+    def forward(self, input_ids, attention_mask=None, labels=None):
+        return self.model(input_ids, attention_mask, labels)
     
     def generate(self, 
                  prompt: str, 
