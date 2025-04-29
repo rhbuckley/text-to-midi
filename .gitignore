@@ -6,6 +6,15 @@ dist/
 wheels/
 *.egg-info
 
+# IDE
+.vscode/
+
+# Huggingface
+.Huggingface/
+
+# Soundfont
+soundfont/
+
 # Virtual environments
 .venv
 
@@ -22,3 +31,6 @@ lmd_full/*
 
 # Checkpoints
 checkpoint*
+
+# wandb
+wandb*
