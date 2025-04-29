@@ -321,12 +321,6 @@ def create_jsonl_file(output_dir: str, job_id: int = 0, total_jobs: int = 1):
     the output file, but with a number added to the end.
     """
 
-    INSTRUCTION = "Generate MIDI from the given text prompt.\n"
-
-    def create_text_row(input, output):
-        text_row = f"""<s>[INST] {INSTRUCTION} {input} [/INST] \\n {output} </s>"""
-        return text_row
-
     from src.download import MidiCaps
     from src.tokenizer import MidiTokenizer
 
@@ -336,81 +330,34 @@ def create_jsonl_file(output_dir: str, job_id: int = 0, total_jobs: int = 1):
     os.makedirs(output_dir, exist_ok=True)
 
     file_idx = job_id
-    jsonl_size = len(ds) // total_jobs
-    skip = len(ds) // total_jobs * job_id
+    start = len(ds) // total_jobs * job_id
+    limit = len(ds) // total_jobs * (job_id + 1)
 
-    lines = 0
-    f = open(f"{output_dir}/part_{file_idx:05d}.jsonl", "w")
+    with open(f"{output_dir}/part_{file_idx:05d}.jsonl", "w") as f:
+        for i in range(start, limit):
+            caption, midi_path = ds[i]
 
-    for i in range(skip, len(ds)):
-        caption, midi_path = ds[i]
+            tokenized_midi = encode_midi_to_tokens(midi_path)
+            tokenized_midi = " ".join(tokenized_midi)
 
-        tokenized_midi = encode_midi_to_tokens(midi_path)
-        tokenized_midi = " ".join(tokenized_midi)
+            json_obj = {
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a helpful assistant who converts text prompts into MIDI-like tokens.",
+                    },
+                    {
+                        "role": "user",
+                        "content": caption,
+                    },
+                    {
+                        "role": "assistant",
+                        "content": tokenized_midi,
+                    },
+                ],
+            }
 
-        json_obj = {
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant who converts text prompts into MIDI-like tokens.",
-                },
-                {
-                    "role": "user",
-                    "content": caption,
-                },
-                {
-                    "role": "assistant",
-                    "content": tokenized_midi,
-                },
-            ],
-        }
-
-        f.write(json.dumps(json_obj) + "\n")
-
-        lines += 1
-        if lines > jsonl_size:
-            f.close()
-            file_idx += 1
-            f = open(f"{output_dir}_part_{file_idx:05d}.jsonl", "w")
-            lines = 0
-
-    f.close()
-
-
-def fine_tune_model(jsonl_dir: str):
-    from src.mistral_config import (
-        model_name,
-        bnb_4bit_compute_dtype,
-        bnb_4bit_quant_type,
-        use_4bit,
-        use_nested_quant,
-    )
-
-    train_dataset = load_dataset(
-        "json", data_files=f"{jsonl_dir}/*.jsonl", split="train"
-    )
-
-    # Load the base model with QLoRA configuration
-    compute_dtype = getattr(torch, bnb_4bit_compute_dtype)
-
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=use_4bit,
-        bnb_4bit_quant_type=bnb_4bit_quant_type,
-        bnb_4bit_compute_dtype=compute_dtype,
-        bnb_4bit_use_double_quant=use_nested_quant,
-    )
-
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name, quantization_config=bnb_config, device_map={"": 0}
-    )
-
-    base_model.config.use_cache = False
-    base_model.config.pretraining_tp = 1
-
-    # Load MitsralAi tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = "right"
+            f.write(json.dumps(json_obj) + "\n")
 
 
 if __name__ == "__main__":
