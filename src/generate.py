@@ -1,4 +1,3 @@
-import torch
 from src.model import TextToMIDIModel
 from src.config import CONFIG
 from src.tokenizer import MidiTokenizer
@@ -49,10 +48,10 @@ if __name__ == "__main__":
     
     # Example generation
     prompt = "A melancholic piano piece in C minor."
-    mp3_path, midi_string = generate_midi(prompt, model)
+    wav_path, midi_string = generate_midi(prompt, model)
     
-    if mp3_path and midi_string:
-        print(f"Generated MP3 saved to: {mp3_path}")
+    if wav_path and midi_string:
+        print(f"Generated WAV saved to: {wav_path}")
         print(f"Generated MIDI string: {midi_string}")
     else:
         print("Generation failed.") 
