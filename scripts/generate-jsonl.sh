@@ -38,9 +38,5 @@ echo "Starting Midistral generation task $SLURM_ARRAY_TASK_ID of $SLURM_ARRAY_TA
 # We need to skip the number of entries equal to the task ID
 # so task 0 will skip 0 entries, task 1 will skip 16838 entries,
 # task 2 will skip 33676 entries, etc.
-
-JSONL_SIZE=$((168385 / 10))
-SKIP_ENTRIES=$((SLURM_ARRAY_TASK_ID * 16838))
-
-python -m src.mistral --jsonl --jsonl-dir ./output_jsonl --jsonl-skip $SKIP_ENTRIES --jsonl-size $JSONL_SIZE
+python -m src.mistral --jsonl --jsonl-dir ./output_jsonl --jsonl-job-id $SLURM_ARRAY_TASK_ID --jsonl-total-jobs 10
 echo "Finished Midistral generation task $SLURM_ARRAY_TASK_ID"

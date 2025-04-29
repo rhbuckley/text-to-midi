@@ -312,7 +312,7 @@ def pretty_midi_to_wav(midi: pretty_midi.PrettyMIDI, output_path: str, fs: int =
     sf.write(output_path, audio, fs)
 
 
-def create_jsonl_file(output_dir: str, skip: int = 0, jsonl_size: int = 100_000):
+def create_jsonl_file(output_dir: str, job_id: int = 1, total_jobs: int = 1):
     """
     Create a JSONL file from the given data.
 
@@ -335,9 +335,12 @@ def create_jsonl_file(output_dir: str, skip: int = 0, jsonl_size: int = 100_000)
 
     os.makedirs(output_dir, exist_ok=True)
 
+    file_idx = job_id
+    jsonl_size = len(ds) // total_jobs
+    skip = len(ds) // total_jobs * (job_id - 1)
+
     lines = 0
-    file_idx = 1
-    f = open(f"{output_dir}_part_{file_idx:05d}.jsonl", "w")
+    f = open(f"{output_dir}/part_{file_idx:05d}.jsonl", "w")
 
     for i in range(skip, len(ds)):
         caption, midi_path = ds[i]
@@ -364,6 +367,42 @@ def create_jsonl_file(output_dir: str, skip: int = 0, jsonl_size: int = 100_000)
     f.close()
 
 
+def fine_tune_model(jsonl_dir: str):
+    from src.mistral_config import (
+        model_name,
+        bnb_4bit_compute_dtype,
+        bnb_4bit_quant_type,
+        use_4bit,
+        use_nested_quant,
+    )
+
+    train_dataset = load_dataset(
+        "json", data_files=f"{jsonl_dir}/*.jsonl", split="train"
+    )
+
+    # Load the base model with QLoRA configuration
+    compute_dtype = getattr(torch, bnb_4bit_compute_dtype)
+
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=use_4bit,
+        bnb_4bit_quant_type=bnb_4bit_quant_type,
+        bnb_4bit_compute_dtype=compute_dtype,
+        bnb_4bit_use_double_quant=use_nested_quant,
+    )
+
+    base_model = AutoModelForCausalLM.from_pretrained(
+        model_name, quantization_config=bnb_config, device_map={"": 0}
+    )
+
+    base_model.config.use_cache = False
+    base_model.config.pretraining_tp = 1
+
+    # Load MitsralAi tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "right"
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -374,14 +413,14 @@ if __name__ == "__main__":
     parser.add_argument("--jsonl-dir", type=str, default="jsonl_data", required=False)
 
     # This is used as an offset (you can skip lines so we can batch)
-    parser.add_argument("--jsonl-skip", type=int, default=0)
-
-    # This is the number of lines per JSONL file.
-    parser.add_argument("--jsonl-size", type=int, default=100_000)
+    parser.add_argument("--jsonl-job-id", type=int, default=1)
+    parser.add_argument("--jsonl-total-jobs", type=int, default=1)
 
     args = parser.parse_args()
 
     if args.jsonl:
         create_jsonl_file(
-            args.jsonl_dir, skip=args.jsonl_skip, jsonl_size=args.jsonl_size
+            args.jsonl_dir,
+            job_id=args.jsonl_job_id,
+            total_jobs=args.jsonl_total_jobs,
         )
