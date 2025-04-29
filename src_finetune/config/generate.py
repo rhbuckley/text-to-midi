@@ -3,6 +3,7 @@ import os
 
 if __name__ == "__main__":
     lines = []
+    dir = "/work/pi_mchiovaro_uri_edu/richard_buckley/musicgen/jsonl_data"
     with open("7B.yaml", "r") as f:
         # find the instruct_data key
         i = 0
@@ -17,7 +18,6 @@ if __name__ == "__main__":
             key, value = line.split(": ")
 
             # find all files within the directory
-            dir = "/work/pi_mchiovaro_uri_edu/richard_buckley/musicgen/jsonl_data"
             files = [f for f in os.listdir(dir) if f.endswith(".jsonl")]
             csf = ",".join(files)
             break
@@ -26,7 +26,7 @@ if __name__ == "__main__":
             raise ValueError("instruct_data not found")
 
         # replace the line with the new value
-        lines[i] = lines[i].split(": ")[0] + ": " + f'"{csf}"' + "\n"
+        lines[i] = lines[i].split(": ")[0] + ": " + f'"{dir}/{csf}"' + "\n"
 
     with open("7B.yaml", "w") as f:
         f.writelines(lines)
