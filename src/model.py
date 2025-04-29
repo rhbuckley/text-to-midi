@@ -168,7 +168,7 @@ class TextToMIDIModel:
             output_sequences = self.model.generate(
                 input_ids=input_ids_tensor,
                 attention_mask=attention_mask_tensor,
-                max_new_tokens=max_length,
+                max_length=max_length,
                 temperature=temperature,
                 top_k=top_k,
                 top_p=top_p,

@@ -53,7 +53,7 @@ CONFIG: Config = {
     "lr_scheduler_type": "linear",		# Type of learning rate scheduler
     "warmup_steps": 500,				# Number of warmup steps for the learning rate scheduler
     "gradient_accumulation_steps": 8,	# Number of steps to accumulate gradients before updating
-    "model_save_path": "checkpoints",   # Path to save the model checkpoints
+    "model_save_path": "checkpoints8",   # Path to save the model checkpoints
 
     "model_config": {
         "max_length": 1024,				# Maximum sequence length for the model
