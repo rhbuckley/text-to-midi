@@ -7,7 +7,9 @@ if __name__ == "__main__":
         # find the instruct_data key
         i = 0
         csf = None
-        for i, line in enumerate(f.readlines()):
+        lines = f.readlines()
+
+        for i, line in enumerate(lines):
             if "instruct_data: " not in line:
                 continue
 
@@ -22,8 +24,6 @@ if __name__ == "__main__":
 
         if csf is None:
             raise ValueError("instruct_data not found")
-
-        lines = f.readlines()
 
         # replace the line with the new value
         lines[i] = lines[i].split(": ")[0] + ": " + f'"{csf}"' + "\n"
