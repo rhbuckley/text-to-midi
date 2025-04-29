@@ -1,0 +1,77 @@
+# environment-macos.yml
+
+name: text2midi
+
+channels:
+    - pytorch
+    - conda-forge
+    - defaults
+
+dependencies:
+    # --- Core ---
+    - python>=3.10,<3.13
+    - pip
+    - setuptools
+    - wheel
+
+    # --- System/Security Libraries (Often handled better by Conda) ---
+    - openssl
+    - ca-certificates
+
+    # --- Libraries with C components / Common Dependencies ---
+    - fluidsynth
+    - ffmpeg
+    - numpy
+    - pandas
+    - scipy
+    - scikit-learn
+    - matplotlib
+    - pillow
+    - requests
+    - pysoundfile
+    # --- PyTorch (for macOS Apple Silicon - MPS backend) ---
+    # Installs PyTorch, Torchvision, and Torchaudio using Conda.
+    # MPS acceleration will be used automatically on Apple Silicon hardware (M1/M2/M3...).
+    # For Intel Macs, this will install CPU-only versions.
+    - pytorch
+    - torchvision
+    - torchaudio
+
+    - pip:
+          - accelerate
+          # WARNING: bitsandbytes often has limited or no support on macOS.
+          # It might install but fail at runtime, or require specific compilation flags not handled here.
+          # Consider commenting this out if you encounter issues locally.
+          - bitsandbytes
+          - datasets
+          - huggingface-hub
+          - peft
+          - tokenizers
+          - transformers
+          - trl
+          - wandb
+          - altair
+          - fastapi
+          - gradio-client
+          - gradio
+          - plotly
+          - pydeck
+          - streamlit
+          - uvicorn
+          - librosa
+          - midi2audio
+          - midiutil
+          - mido
+          - music21
+          - pretty-midi
+          - pyaudio
+          - pydub
+          - pyfluidsynth
+          - soundfile
+          - joblib
+          - llvmlite
+          - numba
+          - pooch
+          - python-dotenv
+          - tqdm
+          - typer

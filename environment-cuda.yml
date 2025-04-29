@@ -1,0 +1,79 @@
+# Name for the Conda environment
+name: text2midi
+
+channels:
+    - pytorch
+    - nvidia
+    - conda-forge # Community channel, often has the latest versions
+    - defaults # Default Anaconda channel
+
+dependencies:
+    # --- Core ---
+    - python>=3.10,<3.13
+    - pip
+    - setuptools
+    - wheel
+
+    # --- System/Security Libraries (Often handled better by Conda) ---
+    - openssl
+    - ca-certificates
+
+    # --- Libraries with C components / Common Dependencies ---
+    - fluidsynth
+    - ffmpeg
+    - numpy
+    - pandas
+    - scipy
+    - scikit-learn
+    - matplotlib
+    - pillow
+    - requests
+    - pysoundfile
+
+    # --- Torch ---
+    - torch
+    - torchvision
+    - torchaudio
+    - pytorch
+    - pytorch-cuda=12.1
+
+    - pip:
+          # --- ML Frameworks & Tools ---
+          - accelerate
+          - bitsandbytes
+          - datasets
+          - huggingface-hub
+          - peft
+          - tokenizers
+          - transformers
+          - trl
+          - wandb
+
+          # --- Web UI / API ---
+          - altair
+          - fastapi
+          - gradio-client
+          - gradio
+          - plotly
+          - streamlit
+          - uvicorn
+
+          # --- Audio / MIDI Processing ---
+          - librosa
+          - midi2audio
+          - midiutil
+          - mido
+          - music21
+          - pretty-midi
+          - pyaudio
+          - pydub
+          - pyfluidsynth
+          - soundfile
+
+          # --- Utilities & Others ---
+          - joblib # Often used by scikit-learn, may be pulled automatically
+          - llvmlite # Dependency for numba
+          - numba # Code accelerator
+          - pooch # File downloader (often used by libraries like librosa)
+          - python-dotenv # Load environment variables from .env files
+          - tqdm # Progress bars
