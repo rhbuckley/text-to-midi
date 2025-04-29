@@ -9,6 +9,7 @@ from transformers.models.gpt2 import GPT2LMHeadModel, GPT2Config
 # Model Config
 # ================================================
 
+
 class ModelConfig(TypedDict):
     temperature: float
     max_length: int
@@ -19,15 +20,16 @@ class ModelConfig(TypedDict):
     n_head: int
     output: str
 
+
 # ================================================
 # Device
 # ================================================
 
 
 device = torch.device(
-    "cuda" if torch.cuda.is_available() else
-    "mps" if torch.backends.mps.is_available() else
-    "cpu"
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps" if torch.backends.mps.is_available() else "cpu"
 )
 
 # ================================================
@@ -36,10 +38,12 @@ device = torch.device(
 
 
 class TextToMIDIModel:
-    def __init__(self,
-                 config: ModelConfig,
-                 from_model_path: Optional[str] = None,
-                 from_pretrained: Optional[str] = None):
+    def __init__(
+        self,
+        config: ModelConfig,
+        from_model_path: Optional[str] = None,
+        from_pretrained: Optional[str] = None,
+    ):
         """
         Initialize the model with a given configuration.
 
@@ -66,14 +70,12 @@ class TextToMIDIModel:
             model_config = GPT2Config(
                 # Use dynamic vocab size
                 vocab_size=vocab_size,
-
                 # Match tokenizer max length
                 n_positions=self.config["max_length"],
                 n_ctx=self.config["max_length"],
                 n_embd=self.config["n_embd"],
                 n_layer=self.config["n_layer"],
                 n_head=self.config["n_head"],
-
                 # Add the id of the end of sequence token
                 eos_token_id=self.tokenizer.eos_token_id,
                 pad_token_id=self.tokenizer.pad_token_id,
@@ -89,8 +91,9 @@ class TextToMIDIModel:
         if from_model_path:
             print(f"Loading model weights from local path: {from_model_path}")
             try:
-                self.model.load_state_dict(torch.load(
-                    from_model_path, map_location=device))
+                self.model.load_state_dict(
+                    torch.load(from_model_path, map_location=device)
+                )
             except Exception as e:
                 print(f"Error loading model weights: {e}")
                 raise e
@@ -106,25 +109,32 @@ class TextToMIDIModel:
         # Prevent loading from both Hugging Face and local path
         # ================================================
 
-        assert not (from_model_path and from_pretrained), \
-            "Cannot provide both model_path and from_pretrained."
+        assert not (
+            from_model_path and from_pretrained
+        ), "Cannot provide both model_path and from_pretrained."
 
         # ================================================
         # Override the __call__ method to return a CausalLMOutputWithPast
         # ================================================
 
     def __call__(self, input_ids, attention_mask=None, labels=None):
-        return self.model.forward(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        return self.model.forward(
+            input_ids=input_ids, attention_mask=attention_mask, labels=labels
+        )
 
     def forward(self, input_ids, attention_mask=None, labels=None):
-        return self.model.forward(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
+        return self.model.forward(
+            input_ids=input_ids, attention_mask=attention_mask, labels=labels
+        )
 
-    def generate(self,
-                 prompt: str,
-                 max_length: Optional[int] = None,
-                 temperature: Optional[float] = None,
-                 top_k: Optional[int] = None,
-                 top_p: Optional[float] = None):
+    def generate(
+        self,
+        prompt: str,
+        max_length: Optional[int] = None,
+        temperature: Optional[float] = None,
+        top_k: Optional[int] = None,
+        top_p: Optional[float] = None,
+    ):
         """
         Generate a MIDI sequence from a text prompt.
 
@@ -145,7 +155,7 @@ class TextToMIDIModel:
         top_p = top_p or self.config["top_p"]
 
         # Tokenize the prompt
-        tokenized = self.tokenizer.tokenize(prompt, debug=True)
+        tokenized = self.tokenizer.tokenize(prompt)
         input_ids_tensor = tokenized["input_ids"].detach().cpu().long().to(device)  # type: ignore
         attention_mask_tensor = tokenized["attention_mask"].detach().cpu().long().to(device)  # type: ignore
 
@@ -162,7 +172,7 @@ class TextToMIDIModel:
                 do_sample=True,
                 num_return_sequences=1,
                 pad_token_id=self.tokenizer.pad_token_id,  # Use pad token id
-                eos_token_id=self.tokenizer.eos_token_id  # Use eos token id for stopping
+                eos_token_id=self.tokenizer.eos_token_id,  # Use eos token id for stopping
             )
 
         if output_sequences is None or len(output_sequences) == 0:
@@ -175,11 +185,11 @@ class TextToMIDIModel:
         try:
             # Detokenize the generated sequence (including prompt part)
             midi_string = self.tokenizer.detokenize(
-                generated_sequence, return_strings=True)
+                generated_sequence, return_strings=True
+            )
 
             # Save the generated tokens to a MIDI file
-            self.tokenizer.detokenize_to_file(
-                generated_sequence, self.config["output"])
+            self.tokenizer.detokenize_to_file(generated_sequence, self.config["output"])
             print(f"MIDI file saved to: {self.config['output']}")
 
             # Convert MIDI to wav

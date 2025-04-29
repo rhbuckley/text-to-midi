@@ -34,3 +34,4 @@ checkpoint*
 
 # wandb
 wandb*
+.DS_Store
