@@ -2,9 +2,9 @@ import json
 import os
 import torch
 import pretty_midi
-import soundfile as sf
 import pandas as pd
 from tqdm import tqdm
+import soundfile as sf
 from peft import LoraConfig, PeftModel
 from datasets import Dataset, load_dataset
 from trl import SFTTrainer
@@ -321,7 +321,7 @@ def create_jsonl_file(output_dir: str, skip: int = 0, jsonl_size: int = 100_000)
     the output file, but with a number added to the end.
     """
 
-    INSTRUCTION = "Generate a MIDI file from the given text prompt.\n"
+    INSTRUCTION = "Generate MIDI from the given text prompt.\n"
 
     def create_text_row(input, output):
         text_row = f"""<s>[INST] {INSTRUCTION} {input} [/INST] \\n {output} </s>"""
@@ -339,7 +339,9 @@ def create_jsonl_file(output_dir: str, skip: int = 0, jsonl_size: int = 100_000)
     file_idx = 1
     f = open(f"{output_dir}_part_{file_idx:05d}.jsonl", "w")
 
-    for caption, midi_path in tqdm(ds[skip:]):  # type: ignore
+    for i in range(skip, len(ds)):
+        caption, midi_path = ds[i]
+
         tokenized_midi = encode_midi_to_tokens(midi_path)
         tokenized_midi = " ".join(tokenized_midi)
 
@@ -366,13 +368,20 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--create-jsonl", action="store_true")
-    parser.add_argument("--output_dir", type=str, default="jsonl_data", required=False)
-    parser.add_argument("--skip-jsonl", type=int, default=0)
+    parser.add_argument("--jsonl", action="store_true")
+
+    # The directory to save the JSONL files.
+    parser.add_argument("--jsonl-dir", type=str, default="jsonl_data", required=False)
+
+    # This is used as an offset (you can skip lines so we can batch)
+    parser.add_argument("--jsonl-skip", type=int, default=0)
+
+    # This is the number of lines per JSONL file.
     parser.add_argument("--jsonl-size", type=int, default=100_000)
+
     args = parser.parse_args()
 
-    if args.create_jsonl:
+    if args.jsonl:
         create_jsonl_file(
-            args.output_dir, skip=args.skip_jsonl, jsonl_size=args.jsonl_size
+            args.jsonl_dir, skip=args.jsonl_skip, jsonl_size=args.jsonl_size
         )

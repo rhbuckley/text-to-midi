@@ -15,6 +15,9 @@ wheels/
 # Soundfont
 soundfont/
 
+# JSONL files
+jsonl_data/
+
 # Virtual environments
 .venv
 
