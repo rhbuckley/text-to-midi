@@ -463,6 +463,9 @@ if __name__ == "__main__":
                         }
                     )
 
+                    # delete the generated mp3 file
+                    os.remove(generated_mp3_path)
+
                 except Exception as audio_e:
                     print(f"Error logging generated audio/text to W&B: {audio_e}")
 
