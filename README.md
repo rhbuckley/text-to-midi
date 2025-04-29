@@ -4,4 +4,5 @@
 
 `python -m src.model`
 
-conda env create -f environment.yml
+`conda env create -f environment.yml`
+`conda activate text2midi`
