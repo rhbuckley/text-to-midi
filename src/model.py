@@ -1,3 +1,4 @@
+import os
 import torch
 from typing import Optional, TypedDict
 from src.tokenizer import MidiTokenizer
@@ -134,6 +135,7 @@ class TextToMIDIModel:
         temperature: Optional[float] = None,
         top_k: Optional[int] = None,
         top_p: Optional[float] = None,
+        cleanup: bool = False,
     ):
         """
         Generate a MIDI sequence from a text prompt.
@@ -144,6 +146,7 @@ class TextToMIDIModel:
             temperature (float, optional): The temperature for the softmax function.
             top_k (int, optional): The number of top tokens to consider.
             top_p (float, optional): The cumulative probability threshold for top-k.
+            cleanup (bool, optional): Whether to delete the generated MIDI file.
 
         Returns:
             torch.Tensor: The generated MIDI sequence.
@@ -195,6 +198,9 @@ class TextToMIDIModel:
             # Convert MIDI to wav
             output_wav_path = midi_to_wav(self.config["output"])
             print(f"MP3 file saved to: {output_wav_path}")
+
+            if cleanup:
+                os.remove(self.config["output"])
 
             return output_wav_path, midi_string
         except Exception as e:

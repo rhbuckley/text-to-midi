@@ -435,7 +435,7 @@ if __name__ == "__main__":
         try:
             print("\nGenerating sample audio...")
             random_prompt = random.choice(CONFIG["sample_prompts"])
-            generated_outputs = model.generate(random_prompt)
+            generated_outputs = model.generate(random_prompt, cleanup=True)
 
             if generated_outputs is None:
                 print("Sample audio generation failed for this epoch.")
