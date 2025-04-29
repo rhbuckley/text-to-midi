@@ -349,10 +349,20 @@ def create_jsonl_file(output_dir: str, job_id: int = 0, total_jobs: int = 1):
         tokenized_midi = " ".join(tokenized_midi)
 
         json_obj = {
-            "text": create_text_row(caption, tokenized_midi),
-            "instruction": INSTRUCTION,
-            "input": caption,
-            "output": tokenized_midi,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant who converts text prompts into MIDI-like tokens.",
+                },
+                {
+                    "role": "user",
+                    "content": caption,
+                },
+                {
+                    "role": "assistant",
+                    "content": tokenized_midi,
+                },
+            ],
         }
 
         f.write(json.dumps(json_obj) + "\n")
