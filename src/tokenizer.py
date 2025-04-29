@@ -188,8 +188,6 @@ class MidiTokenizer:
         midi.addTrackName(track, time, "Generated Track")
         midi.addTempo(track, time, 120)
 
-        print(sequence)
-
         for event in sequence:
             tempo = 120  # The tempo set earlier
             beats_per_second = tempo / 60.0
@@ -314,7 +312,6 @@ class MidiTokenizer:
         for raw_data in raw_events:
             raw_data = raw_data.strip().split(" ")
             headers, tokens = raw_data[::2], raw_data[1::2]
-            print(headers, tokens)
 
             CORRECT_HEADERS = [PITCH_TOKEN, VELOCITY_TOKEN, TIME_TOKEN, DURATION_TOKEN]
             if headers != CORRECT_HEADERS:
