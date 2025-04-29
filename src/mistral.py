@@ -312,7 +312,7 @@ def pretty_midi_to_wav(midi: pretty_midi.PrettyMIDI, output_path: str, fs: int =
     sf.write(output_path, audio, fs)
 
 
-def create_jsonl_file(output_dir: str, job_id: int = 1, total_jobs: int = 1):
+def create_jsonl_file(output_dir: str, job_id: int = 0, total_jobs: int = 1):
     """
     Create a JSONL file from the given data.
 
@@ -337,7 +337,7 @@ def create_jsonl_file(output_dir: str, job_id: int = 1, total_jobs: int = 1):
 
     file_idx = job_id
     jsonl_size = len(ds) // total_jobs
-    skip = len(ds) // total_jobs * (job_id - 1)
+    skip = len(ds) // total_jobs * job_id
 
     lines = 0
     f = open(f"{output_dir}/part_{file_idx:05d}.jsonl", "w")
@@ -413,7 +413,7 @@ if __name__ == "__main__":
     parser.add_argument("--jsonl-dir", type=str, default="jsonl_data", required=False)
 
     # This is used as an offset (you can skip lines so we can batch)
-    parser.add_argument("--jsonl-job-id", type=int, default=1)
+    parser.add_argument("--jsonl-job-id", type=int, default=0)
     parser.add_argument("--jsonl-total-jobs", type=int, default=1)
 
     args = parser.parse_args()

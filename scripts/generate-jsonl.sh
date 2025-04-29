@@ -6,8 +6,8 @@
 #SBATCH --array=0-10                # Job array: 0-10 tasks
 
 # Output and Error Log Files (%j will be replaced by the job ID)
-#SBATCH --output=slurm_logs/midi_train_%j.log
-#SBATCH --error=slurm_logs/midi_train_%j.err
+#SBATCH --output=slurm_logs/jsonl_generate_%j.log
+#SBATCH --error=slurm_logs/jsonl_generate_%j.err
 
 # Email notifications
 #SBATCH --mail-type=ALL                 # Send email on ALL job events (BEGIN, END, FAIL)
@@ -38,5 +38,5 @@ echo "Starting Midistral generation task $SLURM_ARRAY_TASK_ID of $SLURM_ARRAY_TA
 # We need to skip the number of entries equal to the task ID
 # so task 0 will skip 0 entries, task 1 will skip 16838 entries,
 # task 2 will skip 33676 entries, etc.
-python -m src.mistral --jsonl --jsonl-dir ./output_jsonl --jsonl-job-id $SLURM_ARRAY_TASK_ID --jsonl-total-jobs 10
+python -m src.mistral --jsonl --jsonl-job-id $SLURM_ARRAY_TASK_ID --jsonl-total-jobs 10
 echo "Finished Midistral generation task $SLURM_ARRAY_TASK_ID"
