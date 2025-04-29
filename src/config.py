@@ -8,12 +8,14 @@ from src.model import ModelConfig
 import os
 import wandb
 from dotenv import load_dotenv
+
 load_dotenv()
 wandb.login(key=os.getenv("WANDB_API_KEY"))
 
 # ================================================
 # Configuration
 # ================================================
+
 
 class Config(TypedDict):
     wandb_project: str
@@ -30,14 +32,16 @@ class Config(TypedDict):
     warmup_steps: int
     gradient_accumulation_steps: int
     model_save_path: str
-    
+
     model_config: ModelConfig
     sample_prompts: list[str]
 
 
+# fmt: off
+
 CONFIG: Config = {
     "wandb_project": "text2midi",       # Project name for W&B
-    "wandb_job_type": "disabled",          # Job type for W&B
+    "wandb_job_type": "train",          # Job type for W&B
     "wandb_mode": "online",             # Mode for W&B
 
     "epochs": 20,				        # Number of training epochs
@@ -70,3 +74,5 @@ CONFIG: Config = {
         "Epic orchestral score for a battle scene.",
     ]
 }
+
+# fmt: on
