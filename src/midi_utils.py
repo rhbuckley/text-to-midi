@@ -1,5 +1,9 @@
+import io
 import os
+import zipfile
+import requests
 import warnings
+import subprocess
 import pretty_midi
 
 
@@ -20,9 +24,9 @@ def parse_midi_pretty(midi_file_path):
     try:
         # Load the MIDI file
         with warnings.catch_warnings():
-             # Suppress common warnings like "Tempo event found at time..." if desired
-             warnings.simplefilter("ignore", category=RuntimeWarning)
-             midi_data = pretty_midi.PrettyMIDI(midi_file_path)
+            # Suppress common warnings like "Tempo event found at time..." if desired
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            midi_data = pretty_midi.PrettyMIDI(midi_file_path)
 
         # Iterate over all instruments in the MIDI file
         for instrument in midi_data.instruments:
@@ -32,168 +36,104 @@ def parse_midi_pretty(midi_file_path):
 
             # Iterate over all notes played by this instrument
             for note in instrument.notes:
-                start_time = note.start # Start time in seconds
-                end_time = note.end     # End time in seconds
+                start_time = note.start  # Start time in seconds
+                end_time = note.end  # End time in seconds
                 duration = end_time - start_time
 
                 # Ensure duration is positive (handle potential rounding errors or zero-length notes)
-                if duration > 1e-5: # Use a small threshold
-                    notes.append({
-                        'pitch': note.pitch,
-                        'velocity': note.velocity,
-                        'time': start_time,
-                        'duration': duration
-                        # Optional: Add instrument info if needed later
-                        # 'instrument_program': instrument.program,
-                        # 'instrument_name': instrument.name
-                    })
+                if duration > 1e-5:
+                    notes.append(
+                        {
+                            "pitch": note.pitch,
+                            "velocity": note.velocity,
+                            "time": start_time,
+                            "duration": duration,
+                            # Optional: Add instrument info if needed later
+                            # 'instrument_program': instrument.program,
+                            # 'instrument_name': instrument.name
+                        }
+                    )
 
         # Sort notes by start time (important for sequence representation)
-        notes.sort(key=lambda x: x['time'])
+        notes.sort(key=lambda x: x["time"])
 
     except Exception as e:
         print(f"Error parsing MIDI file {midi_file_path} with pretty_midi: {e}")
-        return [] # Return empty list on error
+        return []
 
     return notes
 
 
-
-# https://github.com/Addy771/MIDI-to-MP3/blob/master/midi.py
-"""
-File: midi.py
-Author: Addy771
-Description: 
-A script which converts MIDI files to WAV and optionally to MP3 using ffmpeg. 
-Works by playing each file and using the stereo mix device to record at the same time
-"""
-
-
-import pyaudio  # audio recording
-import wave     # file saving
-import pygame   # midi playback
-import fnmatch  # name matching
-import os       # file listing
-
-
-def midi_to_mp3(midi_file):
+def get_soundfont():
     """
-    Convert a MIDI file to a MP3 file.
+    Downloads and extracts the FluidR3_GM soundfont if it doesn't exist locally.
+
+    This function checks if the FluidR3_GM soundfont (.sf2) file exists in the local
+    directory. If not, it downloads a zip file containing the soundfont from an S3 bucket
+    and extracts it to the appropriate location.
+
+    Returns:
+        str: The filepath to the extracted soundfont file (.sf2)
     """
-    convert_midi_files(single_file=midi_file, do_ffmpeg_convert=True, do_wav_cleanup=True)
-    return os.path.splitext(midi_file)[0] + '.mp3'
+    # Define the target path for the soundfont file
+    soundfont_filepath = "./soundfont/FluidR3_GM/FluidR3_GM.sf2"
+
+    # Create the directory structure if it doesn't exist and download if needed
+    if not os.path.exists(soundfont_filepath):
+        # Create all necessary parent directories
+        os.makedirs(os.path.dirname(soundfont_filepath), exist_ok=True)
+
+        # URL for the zipped soundfont file
+        url = "https://keymusician01.s3.amazonaws.com/FluidR3_GM.zip"
+
+        # Download the zip file and extract its contents
+        response = requests.get(url)
+        with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+            z.extractall(os.path.dirname(soundfont_filepath))
+        print("Soundfont downloaded and extracted to", soundfont_filepath)
+
+    return soundfont_filepath
 
 
-def convert_midi_files(
-    do_ffmpeg_convert=True,    # Uses FFmpeg to convert WAV files to MP3
-    do_wav_cleanup=True,       # Deletes WAV files after conversion to MP3
-    sample_rate=44100,         # Sample rate used for WAV/MP3
-    channels=2,                # Audio channels (1 = mono, 2 = stereo)
-    buffer=1024,               # Audio buffer size
-    mp3_bitrate=128,           # Bitrate to save MP3 with in kbps (CBR)
-    input_device=1,            # Which recording device to use
-    search_dir="./",           # Directory to search for MIDI files
-    single_file=None           # Optional single MIDI file to convert
-):
+def midi_to_wav(midi_filepath, wav_filepath=None):
     """
-    Convert MIDI files to WAV and optionally to MP3 using ffmpeg.
-    
+    Converts a MIDI file to a WAV file using fluidsynth.
+
     Args:
-        do_ffmpeg_convert (bool): Whether to convert WAV to MP3
-        do_wav_cleanup (bool): Whether to delete WAV files after MP3 conversion
-        sample_rate (int): Sample rate for WAV/MP3
-        channels (int): Number of audio channels
-        buffer (int): Audio buffer size
-        mp3_bitrate (int): MP3 bitrate in kbps
-        input_device (int): Recording device index
-        search_dir (str): Directory to search for MIDI files
-        single_file (str): Optional path to a single MIDI file to convert
+        midi_filepath (str): Path to the MIDI file.
+        wav_filepath (str, optional): Path to save the WAV file. If not provided,
+            the function will create a default path by replacing the '.mid' extension
+            with '.wav' in the MIDI file's path.
+
+    Returns:
+        str: The filepath to the generated WAV file.
     """
-    # Begins playback of a MIDI file
-    def play_music(music_file):
-        try:
-            pygame.mixer.music.load(music_file)
-        except pygame.error:
-            print("Couldn't play %s! (%s)" % (music_file, pygame.get_error()))
-            return
-        pygame.mixer.music.play()
 
-    # Init pygame playback
-    bitsize = -16   # unsigned 16 bit
-    pygame.mixer.init(sample_rate, bitsize, channels, buffer)
-    # Set volume to 0 to make playback silent
-    pygame.mixer.music.set_volume(0.0)
+    # just rename the midi file to wav
+    if wav_filepath is None:
+        wav_filepath = midi_filepath.replace(".mid", ".wav")
 
-    # Init pyAudio
-    format = pyaudio.paInt16
-    audio = pyaudio.PyAudio()
+    # Check if the .wav file already exists
+    if os.path.isfile(wav_filepath):
+        print(f"{wav_filepath} already exists, skipping")
+        return wav_filepath
+    else:
+        print(f"Creating {wav_filepath} from {midi_filepath}")
 
-    try:
-        # Get list of files to process
-        matches = []
-        if single_file:
-            if os.path.exists(single_file) and single_file.lower().endswith('.mid'):
-                matches.append(single_file)
-            else:
-                print(f"Error: File {single_file} not found or not a MIDI file")
-                return
+        # Run the fluidsynth command to convert MIDI to WAV
+        command = f"fluidsynth -r 48000 {get_soundfont()} -g 1.0 --quiet --no-shell {midi_filepath} -T wav -F {wav_filepath}"
+        print(f"Running command: {command}")
+        process = subprocess.Popen(
+            command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+
+        _, stderr = process.communicate()
+
+        if process.returncode != 0:
+            print(
+                f"Error converting {midi_filepath} to {wav_filepath}: {stderr.decode('utf-8')}"
+            )
         else:
-            for root, dirnames, filenames in os.walk(search_dir):
-                for filename in fnmatch.filter(filenames, '*.mid'):
-                    matches.append(os.path.join(root, filename))
-                
-        # Play each song in the list
-        for song in matches:
-            # Create a filename with a .wav extension
-            file_name = os.path.splitext(os.path.basename(song))[0]
-            new_file = file_name + '.wav'
+            print(f"Successfully created {wav_filepath}")
 
-            # Open the stream and start recording
-            stream = audio.open(format=format, channels=channels, rate=sample_rate, 
-                              input=True, input_device_index=input_device, 
-                              frames_per_buffer=buffer)
-            
-            # Playback the song
-            print("Playing " + file_name + ".mid\n")
-            play_music(song)
-            
-            frames = []
-            
-            # Record frames while the song is playing
-            while pygame.mixer.music.get_busy():
-                frames.append(stream.read(buffer))
-                
-            # Stop recording
-            stream.stop_stream()
-            stream.close()
-
-            # Configure wave file settings
-            wave_file = wave.open(new_file, 'wb')
-            wave_file.setnchannels(channels)
-            wave_file.setsampwidth(audio.get_sample_size(format))
-            wave_file.setframerate(sample_rate)
-            
-            print("Saving " + new_file)   
-            
-            # Write the frames to the wave file
-            wave_file.writeframes(b''.join(frames))
-            wave_file.close()
-            
-            # Call FFmpeg to handle the MP3 conversion if desired
-            if do_ffmpeg_convert:
-                os.system('ffmpeg -i ' + new_file + ' -y -f mp3 -ab ' + str(mp3_bitrate) + 
-                         'k -ac ' + str(channels) + ' -ar ' + str(sample_rate) + 
-                         ' -vn ' + file_name + '.mp3')
-                
-                # Delete the WAV file if desired
-                if do_wav_cleanup:        
-                    os.remove(new_file)
-        
-        # End PyAudio    
-        audio.terminate()    
- 
-    except KeyboardInterrupt:
-        # if user hits Ctrl/C then exit
-        pygame.mixer.music.fadeout(1000)
-        pygame.mixer.music.stop()
-        raise SystemExit
+        return wav_filepath
