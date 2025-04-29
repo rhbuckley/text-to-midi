@@ -1,7 +1,7 @@
 import torch
 from typing import Optional, TypedDict
 from src.tokenizer import MidiTokenizer
-from src.midi_utils import midi_to_mp3
+from src.midi_utils import midi_to_wav
 from transformers.models.gpt2 import GPT2LMHeadModel, GPT2Config
 
 
@@ -22,6 +22,7 @@ class ModelConfig(TypedDict):
 # ================================================
 # Device
 # ================================================
+
 
 device = torch.device(
     "cuda" if torch.cuda.is_available() else
@@ -144,11 +145,9 @@ class TextToMIDIModel:
         top_p = top_p or self.config["top_p"]
 
         # Tokenize the prompt
-        tokenized = self.tokenizer.tokenize(prompt)
-        input_ids_tensor = tokenized["input_ids"].detach(
-        ).cpu().long().to(device)  # type: ignore
-        attention_mask_tensor = tokenized["attention_mask"].detach(
-        ).cpu().long().to(device)  # type: ignore
+        tokenized = self.tokenizer.tokenize(prompt, debug=True)
+        input_ids_tensor = tokenized["input_ids"].detach().cpu().long().to(device)  # type: ignore
+        attention_mask_tensor = tokenized["attention_mask"].detach().cpu().long().to(device)  # type: ignore
 
         # Generate the MIDI sequence
         print(f"Generating MIDI for prompt: '{prompt}'")
@@ -183,11 +182,11 @@ class TextToMIDIModel:
                 generated_sequence, self.config["output"])
             print(f"MIDI file saved to: {self.config['output']}")
 
-            # Convert MIDI to MP3
-            output_mp3_path = midi_to_mp3(self.config["output"])
-            print(f"MP3 file saved to: {output_mp3_path}")
+            # Convert MIDI to wav
+            output_wav_path = midi_to_wav(self.config["output"])
+            print(f"MP3 file saved to: {output_wav_path}")
 
-            return output_mp3_path, midi_string
+            return output_wav_path, midi_string
         except Exception as e:
             print(f"Error during detokenization or MP3 conversion: {e}")
             return None, None
