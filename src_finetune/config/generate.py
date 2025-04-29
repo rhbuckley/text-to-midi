@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
             # find all files within the directory
             files = [f for f in os.listdir(dir) if f.endswith(".jsonl")]
-            csf = ",".join([f'"{dir}/{f}"' for f in files])
+            csf = ",".join([f"{dir}/{f}" for f in files])
             break
 
         if csf is None:
