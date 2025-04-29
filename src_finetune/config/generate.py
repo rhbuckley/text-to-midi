@@ -19,14 +19,14 @@ if __name__ == "__main__":
 
             # find all files within the directory
             files = [f for f in os.listdir(dir) if f.endswith(".jsonl")]
-            csf = ",".join(files)
+            csf = ",".join([f'"{dir}/{f}"' for f in files])
             break
 
         if csf is None:
             raise ValueError("instruct_data not found")
 
         # replace the line with the new value
-        lines[i] = lines[i].split(": ")[0] + ": " + f'"{dir}/{csf}"' + "\n"
+        lines[i] = lines[i].split(": ")[0] + ": " + f'"{csf}"' + "\n"
 
     with open("7B.yaml", "w") as f:
         f.writelines(lines)
