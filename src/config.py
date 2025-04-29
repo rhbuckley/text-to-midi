@@ -37,7 +37,7 @@ class Config(TypedDict):
 
 CONFIG: Config = {
     "wandb_project": "text2midi",       # Project name for W&B
-    "wandb_job_type": "train",          # Job type for W&B
+    "wandb_job_type": "disabled",          # Job type for W&B
     "wandb_mode": "online",             # Mode for W&B
 
     "epochs": 20,				        # Number of training epochs
@@ -59,7 +59,7 @@ CONFIG: Config = {
         "n_embd": 768,				    # Dimensionality of the embeddings and hidden states
         "n_layer": 12,				    # Number of transformer layers
         "n_head": 12,				    # Number of attention heads
-        "output": "generated_midi"		# Path to save the generated MIDI file
+        "output": "generated_midi.mid"	# Path to save the generated MIDI file
     },
 
     "sample_prompts": [
