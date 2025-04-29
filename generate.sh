@@ -42,5 +42,5 @@ echo "Starting Midistral generation task $SLURM_ARRAY_TASK_ID of $SLURM_ARRAY_TA
 JSONL_SIZE=$((168385 / 10))
 SKIP_ENTRIES=$((SLURM_ARRAY_TASK_ID * 16838))
 
-python -m src.midistral  --output_dir ./output_jsonl --skip-jsonl $SKIP_ENTRIES --jsonl-size $JSONL_SIZE
+python -m src.mistral  --output_dir ./output_jsonl --skip-jsonl $SKIP_ENTRIES --jsonl-size $JSONL_SIZE
 echo "Finished Midistral generation task $SLURM_ARRAY_TASK_ID"
