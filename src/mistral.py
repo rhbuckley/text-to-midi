@@ -378,7 +378,7 @@ def finetune(dataset_path: str):
 
     load_dotenv(find_dotenv())
 
-    os.environ["WANDB_PROJECT"] = "alpaca_ft"  # name your W&B project
+    os.environ["WANDB_PROJECT"] = "text2midi-llm"  # name your W&B project
     os.environ["WANDB_LOG_MODEL"] = "checkpoint"  # log all model checkpoints
 
     max_seq_length = 8192
