@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 import torch
@@ -368,6 +369,82 @@ def create_jsonl_file(output_dir: str, job_id: int = 0, total_jobs: int = 1):
             f.write(json.dumps(json_obj) + "\n")
 
 
+def finetune(dataset_path: str):
+    import torch
+    from trl import SFTTrainer
+    from transformers import TrainingArguments
+    from dotenv import load_dotenv, find_dotenv
+    from unsloth import FastLanguageModel, is_bfloat16_supported
+
+    load_dotenv(find_dotenv())
+
+    os.environ["WANDB_PROJECT"] = "alpaca_ft"  # name your W&B project
+    os.environ["WANDB_LOG_MODEL"] = "checkpoint"  # log all model checkpoints
+
+    max_seq_length = 8192
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name="unsloth/mistral-7b-v0.3",  # Choose ANY! eg teknium/OpenHermes-2.5-Mistral-7B
+        max_seq_length=max_seq_length,
+        dtype=None,  # auto
+        load_in_4bit=False,
+        # token = "hf_...", # use one if using gated models like meta-llama/Llama-2-7b-hf
+    )
+
+    model = FastLanguageModel.get_peft_model(
+        model,
+        r=32,  # Choose any number > 0 ! Suggested 8, 16, 32, 64, 128
+        target_modules=[
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj",
+        ],
+        lora_alpha=16,
+        lora_dropout=0,  # Supports any, but = 0 is optimized
+        bias="none",  # Supports any, but = "none" is optimized
+        # [NEW] "unsloth" uses 30% less VRAM, fits 2x larger batch sizes!
+        use_gradient_checkpointing="unsloth",  # True or "unsloth" for very long context
+        random_state=3407,
+        use_rslora=False,  # We support rank stabilized LoRA
+        loftq_config=None,  # And LoftQ
+    )
+
+    files = glob.glob(f"{dataset_path}/*.jsonl")
+    dataset = load_dataset("json", data_files=files, split="train")
+
+    trainer = SFTTrainer(
+        model=model,
+        tokenizer=tokenizer,
+        train_dataset=dataset,
+        max_seq_length=max_seq_length,
+        dataset_num_proc=2,
+        packing=False,  # Can make training 5x faster for short sequences.
+        args=TrainingArguments(
+            per_device_train_batch_size=2,
+            gradient_accumulation_steps=4,
+            warmup_steps=5,
+            max_steps=60,  # Set num_train_epochs = 1 for full training runs
+            learning_rate=2e-4,
+            fp16=not is_bfloat16_supported(),
+            bf16=is_bfloat16_supported(),
+            logging_steps=1,
+            optim="adamw_8bit",
+            weight_decay=0.01,
+            lr_scheduler_type="linear",
+            seed=3407,
+            output_dir="outputs",
+            report_to="wandb",  # Use this for WandB etc
+        ),
+    )
+
+    trainer_stats = trainer.train()
+    model.save_pretrained("lora_model")  # Local saving
+    tokenizer.save_pretrained("lora_model")
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -381,6 +458,7 @@ if __name__ == "__main__":
     parser.add_argument("--jsonl-job-id", type=int, default=0)
     parser.add_argument("--jsonl-total-jobs", type=int, default=1)
 
+    parser.add_argument("--finetune", action="store_true")
     args = parser.parse_args()
 
     if args.jsonl:
@@ -389,3 +467,6 @@ if __name__ == "__main__":
             job_id=args.jsonl_job_id,
             total_jobs=args.jsonl_total_jobs,
         )
+
+    if args.finetune:
+        finetune(args.jsonl_dir)
