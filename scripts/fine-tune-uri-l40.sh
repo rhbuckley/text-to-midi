@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --partition=gpu          # Request the GPU partition
+#SBATCH --partition=gpu-preempt          # Request the GPU partition
 #SBATCH --cpus-per-task=8           # Request CPUs (adjust based on data loading/needs)
 #SBATCH --mem=64G                   # Request memory (e.g., 24GB); adjust as needed
 #SBATCH --time=1-00:00:00           # Max wall time (e.g., 1 day); adjust as needed
-#SBATCH --gres=gpu:l40s:2            # 2x L40s GPU
+#SBATCH --gres=gpu:a100:3            # 2x L40s GPU
 
 # Output and Error Log Files (%j will be replaced by the job ID)
 #SBATCH --output=slurm_logs/fine_tune_%j.log
