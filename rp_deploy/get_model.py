@@ -1,6 +1,7 @@
 import os
 import wandb
 from dotenv import load_dotenv, find_dotenv
+import argparse
 
 
 def wandb_login():
@@ -39,12 +40,26 @@ def get_model(
 
 
 if __name__ == "__main__":
-    project_name = "text2midi-llm"
-    model_name = "model-a0czmwoi"
+    parser = argparse.ArgumentParser(
+        description="Download a model artifact from WandB."
+    )
+    parser.add_argument(
+        "--project_name",
+        type=str,
+        required=True,
+        help="Name of the WandB project.",
+    )
+    parser.add_argument(
+        "--model_name", type=str, required=True, help="Name of the model artifact."
+    )
+    parser.add_argument(
+        "--version",
+        type=str,
+        default="latest",
+        help="Version of the model artifact (default: latest).",
+    )
 
-    # project_name = "text2midi"
-    # model_name = "model_best"
+    args = parser.parse_args()
 
-    version = "latest"
-    local_path = get_model(project_name, model_name, version)
-    print(local_path)
+    local_path = get_model(args.project_name, args.model_name, args.version)
+    print(f"Model downloaded to: {local_path}")
