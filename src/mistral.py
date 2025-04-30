@@ -441,7 +441,6 @@ def finetune(dataset_path: str):
         model=model,
         tokenizer=tokenizer,
         train_dataset=dataset,
-        max_seq_length=max_seq_length,
         dataset_num_proc=2,
         packing=False,  # Can make training 5x faster for short sequences.
         args=TrainingArguments(
