@@ -20,17 +20,27 @@
 # Create log directory if it doesn't exist
 mkdir -p slurm_logs
 
-module spider cuda
-module spider shpc
-module spider python
-module spider conda
-module spider ffmpeg
+# module spider cuda
+# module spider shpc
+# module spider python
+# module spider conda
+# module spider ffmpeg
 
-module load --ignore_cache cuda/12.1
-module load --ignore_cache shpc/0.1.26
-module load --ignore_cache python/3.12
+# module load --ignore_cache cuda/12.1
+# module load --ignore_cache shpc/0.1.26
+# module load --ignore_cache python/3.12
+# module load --ignore_cache conda/latest
+# module load --ignore_cache ffmpeg/7.0.2
+
+# module spider cuda
+# module spider shpc
+# module spider python
+# module spider conda
+# module spider ffmpeg
+
+module load cuda/12.4
+module load --ignore_cache python/3.12.3
 module load --ignore_cache conda/latest
-module load --ignore_cache ffmpeg/7.0.2
 
 # --- Activate Conda Environment ---
 conda activate text2midi
