@@ -36,6 +36,8 @@ dependencies:
     - torchaudio
     - pytorch
     - pytorch-cuda=12.1
+    - sentencepiece
+    - unsloth
 
     - pip:
           # --- ML Frameworks & Tools ---
@@ -90,3 +92,4 @@ dependencies:
           - pooch # File downloader (often used by libraries like librosa)
           - python-dotenv # Load environment variables from .env files
           - tqdm # Progress bars
+          - mistral_common

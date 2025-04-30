@@ -36,6 +36,8 @@ dependencies:
     - pytorch
     - torchvision
     - torchaudio
+    - sentencepiece
+    - unsloth
 
     - pip:
           - accelerate
@@ -89,3 +91,4 @@ dependencies:
           - python-dotenv
           - tqdm
           - typer
+          - mistral_common
