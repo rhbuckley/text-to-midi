@@ -24,6 +24,15 @@ MAX_TIME_SHIFT = 100  # Maximum time shift in steps (1 second)
 VELOCITY_BINS = 32  # Number of bins to quantize velocity
 
 
+PIECE_START = "<>"
+PIECE_END = "</>"
+INSTRUMENT = "I"
+TIME_SHIFT = "T"
+VELOCITY = "V"
+NOTE_ON = "N"
+NOTE_OFF = "O"
+
+
 def quantize_velocity(velocity, bins=VELOCITY_BINS):
     """Quantize velocity into discrete bins."""
     if velocity < 0:
@@ -78,22 +87,21 @@ def encode_midi_to_tokens(midi_path, time_resolution=TIME_RESOLUTION):
 
             # Add events: (time_step, type, value, instrument_program)
             events.append(
-                (start_step, "INSTRUMENT", instrument.program, instrument.program)
+                (start_step, INSTRUMENT, instrument.program, instrument.program)
             )
-            events.append((start_step, "VELOCITY", velocity_bin, instrument.program))
-            events.append((start_step, "NOTE_ON", note.pitch, instrument.program))
-            events.append((end_step, "NOTE_OFF", note.pitch, instrument.program))
+            events.append((start_step, VELOCITY, velocity_bin, instrument.program))
+            events.append((start_step, NOTE_ON, note.pitch, instrument.program))
+            events.append((end_step, NOTE_OFF, note.pitch, instrument.program))
 
     if not events:
-        return ["PIECE_START", "PIECE_END"]
+        return [PIECE_START, PIECE_END]
 
     # Sort all events by time, then by type priority (INSTRUMENT, VELOCITY, NOTE_ON, NOTE_OFF)
-    type_priority = {"INSTRUMENT": 0, "VELOCITY": 1, "NOTE_ON": 2, "NOTE_OFF": 3}
+    type_priority = {INSTRUMENT: 0, VELOCITY: 1, NOTE_ON: 2, NOTE_OFF: 3}
     events.sort(key=lambda x: (x[0], type_priority.get(x[1], 99)))
 
-    tokens = ["PIECE_START"]
+    tokens = [PIECE_START]
     current_time_step = 0
-    active_instrument = -1  # Track active instrument
 
     for time_step, event_type, value, instr_prog in events:
         # --- Add Time Shift ---
@@ -102,7 +110,7 @@ def encode_midi_to_tokens(midi_path, time_resolution=TIME_RESOLUTION):
             # Decompose large time shifts into smaller chunks
             while time_diff > 0:
                 shift = min(time_diff, MAX_TIME_SHIFT)
-                tokens.append(f"TIME_SHIFT={shift}")
+                tokens.append(f"{TIME_SHIFT}={shift}")
                 time_diff -= shift
                 current_time_step += shift  # Update current time *after* adding token
 
@@ -121,7 +129,7 @@ def encode_midi_to_tokens(midi_path, time_resolution=TIME_RESOLUTION):
         # Update current_time_step *after* processing events at this step
         # current_time_step = time_step # This was updated during time shift handling
 
-    tokens.append("PIECE_END")
+    tokens.append(PIECE_END)
     return tokens
 
 
@@ -149,7 +157,7 @@ def decode_tokens_to_midi(
     pending_velocity = 64  # Default velocity if not specified
 
     for token in tokens:
-        if token == "PIECE_START" or token == "PIECE_END":
+        if token == PIECE_START or token == PIECE_END:
             continue
 
         try:
@@ -158,7 +166,7 @@ def decode_tokens_to_midi(
             print(f"Warning: Skipping malformed token: {token}")
             continue
 
-        if event_type == "INSTRUMENT":
+        if event_type == INSTRUMENT:
             try:
                 current_instrument_program = int(value)
                 if current_instrument_program not in instruments:
@@ -167,7 +175,7 @@ def decode_tokens_to_midi(
                     )
             except ValueError:
                 print(f"Warning: Invalid instrument program value: {value}. Skipping.")
-        elif event_type == "TIME_SHIFT":
+        elif event_type == TIME_SHIFT:
             try:
                 steps = int(value)
                 if steps < 0:
@@ -178,7 +186,7 @@ def decode_tokens_to_midi(
                 current_time += steps / time_resolution
             except ValueError:
                 print(f"Warning: Invalid time shift value: {value}. Skipping.")
-        elif event_type == "VELOCITY":
+        elif event_type == VELOCITY:
             try:
                 velocity_bin = int(value)
                 if 0 <= velocity_bin < VELOCITY_BINS:
@@ -192,7 +200,7 @@ def decode_tokens_to_midi(
                 print(f"Warning: Invalid velocity value: {value}. Skipping.")
                 pending_velocity = 64  # Use default on error
 
-        elif event_type == "NOTE_ON":
+        elif event_type == NOTE_ON:
             try:
                 pitch = int(value)
                 if not (0 <= pitch <= 127):
@@ -222,7 +230,7 @@ def decode_tokens_to_midi(
                 # pending_velocity = 64 # Uncomment to reset velocity after each NOTE_ON
             except ValueError:
                 print(f"Warning: Invalid pitch value: {value}. Skipping NOTE_ON.")
-        elif event_type == "NOTE_OFF":
+        elif event_type == NOTE_OFF:
             try:
                 pitch = int(value)
                 if not (0 <= pitch <= 127):
