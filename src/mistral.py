@@ -418,7 +418,9 @@ def finetune(dataset_path: str):
         }
 
     files = glob.glob(f"{dataset_path}/*.jsonl")
-    dataset = load_dataset("json", data_files=files, split="train")
+    dataset = load_dataset(
+        "json", data_files=files, split="train", cache_dir="./.cache"
+    )
     dataset = dataset.map(
         formatting_prompts_func,
         batched=True,
