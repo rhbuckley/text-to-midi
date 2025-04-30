@@ -458,11 +458,16 @@ def finetune(dataset_path: str):
             lr_scheduler_type="linear",
             seed=3407,
             output_dir="outputs",
+            save_strategy="steps",
+            save_steps=50,
+            logging_steps=1,  # Change if needed
             report_to="wandb",  # Use this for WandB etc
         ),
     )
 
     trainer_stats = trainer.train()
+    # trainer_stats = trainer.train(resume_from_checkpoint = True)
+
     model.save_pretrained("lora_model")  # Local saving
     tokenizer.save_pretrained("lora_model")
 
