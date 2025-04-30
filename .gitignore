@@ -33,7 +33,7 @@ lmd_full/*
 *.tar.gz
 
 # Checkpoints
-checkpoint*
+checkpoint*/
 
 # wandb
 wandb*
