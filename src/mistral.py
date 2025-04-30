@@ -460,7 +460,6 @@ def finetune(dataset_path: str):
             output_dir="outputs",
             save_strategy="steps",
             save_steps=50,
-            logging_steps=1,  # Change if needed
             report_to="wandb",  # Use this for WandB etc
         ),
     )
