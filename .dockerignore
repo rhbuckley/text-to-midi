@@ -39,5 +39,3 @@ checkpoint*/
 wandb*
 artifacts/*
 .DS_Store
-
-app/*
