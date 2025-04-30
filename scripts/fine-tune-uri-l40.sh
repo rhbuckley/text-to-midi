@@ -31,5 +31,5 @@ module load --ignore_cache ffmpeg/7.0.2
 conda activate text2midi
 
 cd src_finetune
-export PYTHONPATH="$(pwd)"
-torchrun --nproc-per-node 2 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
+# export PYTHONPATH="$(pwd)"
+env PYTHONPATH=$(pwd) torchrun --nproc-per-node 2 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
