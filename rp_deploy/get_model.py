@@ -22,7 +22,7 @@ def get_model(
     artifact = api.artifact(f"{project_name}/{model_name}:{version}")
 
     # check for existing model
-    artifacts = os.listdir(f"./artifacts")
+    artifacts = os.listdir(f"./artifacts") if os.path.exists("./artifacts") else []
 
     # if version is not latest, check for existing version
     if version != "latest":
