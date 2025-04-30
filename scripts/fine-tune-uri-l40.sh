@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --partition=power9-gpu-preempt     # Request the GPU partition
+#SBATCH --partition=gpu          # Request the GPU partition
 #SBATCH --cpus-per-task=8           # Request CPUs (adjust based on data loading/needs)
 #SBATCH --mem=64G                   # Request memory (e.g., 24GB); adjust as needed
 #SBATCH --time=1-00:00:00           # Max wall time (e.g., 1 day); adjust as needed
-#SBATCH --gres=gpu:v100:4            # 4x V100 GPUs
+#SBATCH --gres=gpu:l40s:2            # 2x L40s GPU
 
 # Output and Error Log Files (%j will be replaced by the job ID)
 #SBATCH --output=slurm_logs/fine_tune_%j.log
@@ -20,30 +20,15 @@
 # Create log directory if it doesn't exist
 mkdir -p slurm_logs
 
-# module spider cuda
-# module spider shpc
-# module spider python
-# module spider conda
-# module spider ffmpeg
-
-# module load --ignore_cache cuda/12.1
-# module load --ignore_cache shpc/0.1.26
-# module load --ignore_cache python/3.12
-# module load --ignore_cache conda/latest
-# module load --ignore_cache ffmpeg/7.0.2
-
-# module spider cuda
-# module spider shpc
-# module spider python
-# module spider conda
-# module spider ffmpeg
-
-module load cuda/12.4
-module load --ignore_cache python/3.12.3
+module load --ignore_cache cuda/12.1
+module load --ignore_cache shpc/0.1.26
+module load --ignore_cache python/3.12
 module load --ignore_cache conda/latest
+module load --ignore_cache ffmpeg/7.0.2
+
 
 # --- Activate Conda Environment ---
 conda activate text2midi
 
 cd src_finetune
-torchrun --nproc-per-node 4 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
+torchrun --nproc-per-node 2 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
