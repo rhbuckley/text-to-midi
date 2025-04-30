@@ -1,23 +1,10 @@
 import glob
 import json
 import os
-import torch
+import unsloth
 import pretty_midi
-import pandas as pd
-from tqdm import tqdm
 import soundfile as sf
-from peft import LoraConfig, PeftModel
-from datasets import Dataset, load_dataset
-from trl import SFTTrainer
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    TrainingArguments,
-    pipeline,
-    logging,
-)
-import math
+from datasets import load_dataset
 
 # Constants for token representation
 TIME_RESOLUTION = 100  # Steps per second
