@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=power9-gpu-preempt     # Request the GPU partition
 #SBATCH --cpus-per-task=8           # Request CPUs (adjust based on data loading/needs)
-#SBATCH --mem=48G                   # Request memory (e.g., 24GB); adjust as needed
+#SBATCH --mem=64G                   # Request memory (e.g., 24GB); adjust as needed
 #SBATCH --time=1-00:00:00           # Max wall time (e.g., 1 day); adjust as needed
 #SBATCH --gres=gpu:v100:4            # 4x V100 GPUs
 
@@ -20,10 +20,11 @@
 # Create log directory if it doesn't exist
 mkdir -p slurm_logs
 
-module load cuda/12.1
-module load python/3.12
-module load conda/latest
-module load ffmpeg/7.0.2
+module load --ignore_cache cuda/12.1
+module load --ignore_cache shpc/0.1.26
+module load --ignore_cache python/3.12
+module load --ignore_cache conda/latest
+module load --ignore_cache ffmpeg/7.0.2
 
 # --- Activate Conda Environment ---
 conda activate text2midi
