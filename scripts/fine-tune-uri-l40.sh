@@ -20,6 +20,12 @@
 # Create log directory if it doesn't exist
 mkdir -p slurm_logs
 
+module spider cuda
+module spider shpc
+module spider python
+module spider conda
+module spider ffmpeg
+
 module load --ignore_cache cuda/12.1
 module load --ignore_cache shpc/0.1.26
 module load --ignore_cache python/3.12
