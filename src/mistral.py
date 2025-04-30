@@ -374,6 +374,7 @@ def finetune(dataset_path: str):
     from trl import SFTTrainer
     from transformers import TrainingArguments
     from dotenv import load_dotenv, find_dotenv
+    from unsloth.chat_templates import get_chat_template
     from unsloth import FastLanguageModel, is_bfloat16_supported
 
     load_dotenv(find_dotenv())
@@ -412,8 +413,29 @@ def finetune(dataset_path: str):
         loftq_config=None,  # And LoftQ
     )
 
+    tokenizer = get_chat_template(
+        tokenizer,
+        chat_template="chatml",  # change this to the right chat_template name
+    )
+
+    def formatting_prompts_func(examples):
+        convos = examples["messages"]
+        texts = [
+            tokenizer.apply_chat_template(
+                convo, tokenize=False, add_generation_prompt=False
+            )
+            for convo in convos
+        ]
+        return {
+            "text": texts,
+        }
+
     files = glob.glob(f"{dataset_path}/*.jsonl")
     dataset = load_dataset("json", data_files=files, split="train")
+    dataset = dataset.map(
+        formatting_prompts_func,
+        batched=True,
+    )
 
     trainer = SFTTrainer(
         model=model,
