@@ -4,76 +4,34 @@ name: text2midi
 channels:
     - pytorch
     - nvidia
+    - xformers
     - conda-forge # Community channel, often has the latest versions
     - defaults # Default Anaconda channel
 
 dependencies:
     # --- Core ---
-    - python>=3.10,<3.13
+    - python=3.11
     - pip
     - setuptools
     - wheel
 
-    # --- System/Security Libraries (Often handled better by Conda) ---
-    - openssl
-    - ca-certificates
-
     # --- Libraries with C components / Common Dependencies ---
-    - fluidsynth
     - ffmpeg
-    - numpy
-    - pandas
-    - scipy
-    - scikit-learn
-    - matplotlib
-    - pillow
-    - requests
+    - fluidsynth
     - pysoundfile
 
     # --- Torch ---
-    - torch
-    - torchvision
-    - torchaudio
     - pytorch
     - pytorch-cuda=12.1
     - cudatoolkit
-    - sentencepiece
-    - unsloth
 
     - pip:
           # --- ML Frameworks & Tools ---
           - unsloth
-          - accelerate
-          - bitsandbytes
           - datasets
           - huggingface-hub
-          - peft
-          - tokenizers
           - transformers
-          - trl
           - wandb
-
-          # --- Mistral ---
-          - fire
-          - simple-parsing
-          - pyyaml
-          - mistral-common
-          - safetensors
-          - tensorboard
-          - tqdm
-
-          - torch
-          - triton
-          - xformers
-
-          # --- Web UI / API ---
-          - altair
-          - fastapi
-          - gradio-client
-          - gradio
-          - plotly
-          - streamlit
-          - uvicorn
 
           # --- Audio / MIDI Processing ---
           - librosa
@@ -81,16 +39,16 @@ dependencies:
           - midiutil
           - mido
           - music21
-          - pretty-midi
+          - pretty_midi
           - pyaudio
           - pydub
           - pyfluidsynth
           - soundfile
 
           # --- Utilities & Others ---
-          - joblib # Often used by scikit-learn, may be pulled automatically
-          - llvmlite # Dependency for numba
-          - numba # Code accelerator
-          - pooch # File downloader (often used by libraries like librosa)
-          - python-dotenv # Load environment variables from .env files
-          - tqdm # Progress bars
+          - joblib
+          - llvmlite
+          - numba
+          - pooch
+          - python-dotenv
+          - tqdm
