@@ -30,6 +30,10 @@ module load --ignore_cache ffmpeg/7.0.2
 # --- Activate Conda Environment ---
 conda activate text2midi
 
-cd src_finetune
-export PYTHONPATH="$(pwd)"
-torchrun --nproc-per-node 1 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
+# --- For Mistral-Finetune ---
+# cd src_finetune
+# export PYTHONPATH="$(pwd)"
+# torchrun --nproc-per-node 1 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
+
+# --- For Unsloth-Finetune ---
+python -m src.mistral --finetune
