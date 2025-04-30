@@ -56,7 +56,7 @@ def handler(event):
     model = load_model_from_checkpoint(model_path)
 
     # generate the MIDI
-    wav_path, midi_string = model.generate(input_data)
+    wav_path, midi_string = model.generate(input_data["prompt"])
 
     # base64 encode the wav file
     wav_base64 = ""
