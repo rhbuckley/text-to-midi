@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=gpu-preempt          # Request the GPU partition
-#SBATCH --cpus-per-task=8           # Request CPUs (adjust based on data loading/needs)
-#SBATCH --mem=64G                   # Request memory (e.g., 24GB); adjust as needed
-#SBATCH --time=1-00:00:00           # Max wall time (e.g., 1 day); adjust as needed
-#SBATCH --gres=gpu:a100:3            # 2x L40s GPU
+#SBATCH --cpus-per-task=8                # Request CPUs (adjust based on data loading/needs)
+#SBATCH --mem=64G                        # Request memory (e.g., 24GB); adjust as needed
+#SBATCH --time=1-00:00:00                # Max wall time (e.g., 1 day); adjust as needed
+#SBATCH --gres=gpu:a100:4                # 4x A100s GPU
 
 # Output and Error Log Files (%j will be replaced by the job ID)
 #SBATCH --output=slurm_logs/fine_tune_%j.log
@@ -33,4 +33,4 @@ conda activate text2midi
 cd src_finetune
 export PYTHONPATH="$(pwd)"
 
-torchrun --nproc-per-node 3 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
+torchrun --nproc-per-node 4 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
