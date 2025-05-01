@@ -1,5 +1,13 @@
 FROM continuumio/miniconda3
 
+# Install fluidsynth AND its system runtime dependencies via apt-get
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fluidsynth \
+    libsndfile1 \
+    libasound2 \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
 # set working directory to be root
 WORKDIR /
 
