@@ -2,7 +2,7 @@ import os
 import torch
 from typing import Optional, TypedDict
 from src.tokenizer import MidiTokenizer
-from src.midi_utils import midi_to_wav
+from src.midi_utils import midi_to_json, midi_to_wav
 from transformers.models.gpt2 import GPT2LMHeadModel, GPT2Config
 
 
@@ -149,7 +149,7 @@ class TextToMIDIModel:
             cleanup (bool, optional): Whether to delete the generated MIDI file.
 
         Returns:
-            torch.Tensor: The generated MIDI sequence.
+            tuple: (wav_path, midi_json)
         """
         # Set default values if not provided
         max_length = max_length or self.config["max_length"]
@@ -197,12 +197,13 @@ class TextToMIDIModel:
 
             # Convert MIDI to wav
             output_wav_path = midi_to_wav(self.config["output"])
-            print(f"MP3 file saved to: {output_wav_path}")
+            print(f"WAV file saved to: {output_wav_path}")
+            midi_json = midi_to_json(self.config["output"])
 
             if cleanup:
                 os.remove(self.config["output"])
 
-            return output_wav_path, midi_string
+            return output_wav_path, midi_json
         except Exception as e:
             print(f"Error during detokenization or MP3 conversion: {e}")
             return None, None

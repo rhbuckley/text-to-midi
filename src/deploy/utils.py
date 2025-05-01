@@ -1,7 +1,10 @@
 import os
 import wandb
-from dotenv import load_dotenv, find_dotenv
 import argparse
+from dotenv import load_dotenv, find_dotenv
+
+
+ARTIFACTS_DIR = "./artifacts"
 
 
 def wandb_login():
@@ -14,29 +17,43 @@ def get_model(
     project_name: str,
     model_name: str,
     version: str = "latest",
+    cleanup: bool = True,
 ):
     # login to wandb
     wandb_login()
+
+    # check for existing model
+    artifacts = os.listdir(ARTIFACTS_DIR) if os.path.exists(ARTIFACTS_DIR) else []
+    artifacts = [x for x in artifacts if x.startswith(f"{project_name}/{model_name}")]
 
     # get the latest model from wandb's api
     api = wandb.Api()
     artifact = api.artifact(f"{project_name}/{model_name}:{version}")
 
-    # check for existing model
-    artifacts = os.listdir(f"./artifacts") if os.path.exists("./artifacts") else []
+    # get the version from the artifact, does the path exist
+    # we do this bc latest is technically not a version
+    if artifact._version is not None:
+        # compute the path where it could be
+        possible_path = f"{project_name}/{model_name}:{artifact._version}"
 
-    # if version is not latest, check for existing version
-    if version != "latest":
-        if f"{model_name}:{version}" in artifacts:
-            local_path = f"./artifacts/{model_name}:{version}"
-            return local_path
-    elif version == "latest":
-        # get the latest model from wandb's api
-        if f"{model_name}:{artifact._version}" in artifacts:
-            local_path = f"./artifacts/{model_name}:{artifact._version}"
-            return local_path
+        # check if it exists
+        if possible_path in artifacts:
+            return f"{ARTIFACTS_DIR}/{possible_path}"
 
-    return artifact.download()
+        # if it doesn't exist, we need to download it
+        file_path = artifact.download(ARTIFACTS_DIR)
+
+        # check if we need to cleanup any old models
+        if cleanup:
+            for artifact in artifacts:
+                os.remove(f"{ARTIFACTS_DIR}/{artifact}")
+
+        # return the path
+        return file_path
+
+    else:
+        # the model was not found in wandb, throw an error
+        raise ValueError(f"Model {model_name} not found in wandb")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,9 @@
 import math
 import os
 import random
-from typing import Any
 import torch
 import wandb
+from typing import Any
 from tqdm.auto import tqdm
 from src.config import CONFIG
 from src.download import MidiCaps

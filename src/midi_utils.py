@@ -48,9 +48,8 @@ def parse_midi_pretty(midi_file_path):
                             "velocity": note.velocity,
                             "time": start_time,
                             "duration": duration,
-                            # Optional: Add instrument info if needed later
-                            # 'instrument_program': instrument.program,
-                            # 'instrument_name': instrument.name
+                            "instrument": instrument.name,
+                            "program": instrument.program,
                         }
                     )
 
@@ -62,6 +61,23 @@ def parse_midi_pretty(midi_file_path):
         return []
 
     return notes
+
+
+def midi_to_json(midi_filepath):
+    """
+    Converts a MIDI file to a JSON representation using pretty_midi.
+
+    Args:
+        midi_filepath (str): Path to the MIDI file.
+
+    Returns:
+        str: The JSON representation of the MIDI file.
+    """
+    # parse the MIDI file
+    notes = parse_midi_pretty(midi_filepath)
+
+    # return the JSON representation
+    return {"data": notes}
 
 
 def get_soundfont():

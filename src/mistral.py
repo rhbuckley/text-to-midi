@@ -1,10 +1,28 @@
 import glob
 import json
 import os
+from midi_utils import midi_to_json, midi_to_wav
 import unsloth
 import pretty_midi
 import soundfile as sf
 from datasets import load_dataset
+
+import torch
+from trl import SFTTrainer
+from dotenv import load_dotenv, find_dotenv
+from unsloth.chat_templates import get_chat_template
+from transformers import TrainingArguments, pipeline
+from unsloth import FastLanguageModel, is_bfloat16_supported
+
+# ================= UNSLOTH CONFIG =================
+BASE_MODEL_NAME = "unsloth/mistral-7b-v0.3"
+MAX_SEQ_LENGTH = 8192
+DTYPE = None
+LOAD_IN_4BIT = False
+
+# ================= WANDB CONFIG =================
+
+load_dotenv(find_dotenv())
 
 # Constants for token representation
 TIME_RESOLUTION = 100  # Steps per second
@@ -357,30 +375,21 @@ def create_jsonl_file(output_dir: str, job_id: int = 0, total_jobs: int = 1):
 
 
 def finetune(dataset_path: str):
-    import torch
-    from trl import SFTTrainer
-    from transformers import TrainingArguments
-    from dotenv import load_dotenv, find_dotenv
-    from unsloth.chat_templates import get_chat_template
-    from unsloth import FastLanguageModel, is_bfloat16_supported
-
-    load_dotenv(find_dotenv())
-
     os.environ["WANDB_PROJECT"] = "text2midi-llm"  # name your W&B project
     os.environ["WANDB_LOG_MODEL"] = "checkpoint"  # log all model checkpoints
 
-    max_seq_length = 8192
+    # load the model
     model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name="unsloth/mistral-7b-v0.3",  # Choose ANY! eg teknium/OpenHermes-2.5-Mistral-7B
-        max_seq_length=max_seq_length,
-        dtype=None,  # auto
-        load_in_4bit=False,
-        # token = "hf_...", # use one if using gated models like meta-llama/Llama-2-7b-hf
+        model_name=BASE_MODEL_NAME,
+        max_seq_length=MAX_SEQ_LENGTH,
+        dtype=DTYPE,
+        load_in_4bit=LOAD_IN_4BIT,
     )
 
+    # get the peft model
     model = FastLanguageModel.get_peft_model(
         model,
-        r=32,  # Choose any number > 0 ! Suggested 8, 16, 32, 64, 128
+        r=32,
         target_modules=[
             "q_proj",
             "k_proj",
@@ -392,12 +401,11 @@ def finetune(dataset_path: str):
         ],
         lora_alpha=16,
         lora_dropout=0,  # Supports any, but = 0 is optimized
-        bias="none",  # Supports any, but = "none" is optimized
-        # [NEW] "unsloth" uses 30% less VRAM, fits 2x larger batch sizes!
-        use_gradient_checkpointing="unsloth",  # True or "unsloth" for very long context
+        bias="none",
+        use_gradient_checkpointing="unsloth",
         random_state=3407,
-        use_rslora=False,  # We support rank stabilized LoRA
-        loftq_config=None,  # And LoftQ
+        use_rslora=False,
+        loftq_config=None,
     )
 
     tokenizer = get_chat_template(
@@ -413,9 +421,7 @@ def finetune(dataset_path: str):
             )
             for convo in convos
         ]
-        return {
-            "text": texts,
-        }
+        return {"text": texts}
 
     files = glob.glob(f"{dataset_path}/*.jsonl")
     dataset = load_dataset(
@@ -458,6 +464,87 @@ def finetune(dataset_path: str):
 
     model.save_pretrained("lora_model")  # Local saving
     tokenizer.save_pretrained("lora_model")
+
+
+def generate(
+    prompt: str,
+    temperature: float = 0.8,
+    top_p: float = 0.9,
+    top_k: int = 50,
+    max_new_tokens: int = 512,
+    model_checkpoint_path: str = "lora_model",
+):
+    """
+    Generate a MIDI from a text prompt using a trained model.
+    """
+    # get the pretrained model / tokenizer
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name=BASE_MODEL_NAME,
+        max_seq_length=MAX_SEQ_LENGTH,
+        dtype=DTYPE,
+        load_in_4bit=LOAD_IN_4BIT,
+    )
+
+    # load the model checkpoint
+    try:
+        print(f"Loading model checkpoint from {model_checkpoint_path}")
+        model.load_adapter(model_checkpoint_path)
+        print(f"Model checkpoint loaded from {model_checkpoint_path}")
+    except Exception as e:
+        print(f"Error loading model checkpoint from {model_checkpoint_path}: {e}")
+        raise e
+
+    # prepare for inference
+    model.eval()
+
+    # create the inference pipeline
+    inference_pipe = pipeline(
+        "text-generation", model=model, tokenizer=tokenizer, device=model.device
+    )
+
+    # --- Prepare inference input ---
+    # This is the history leading up to where you want the model to generate.
+    inference_conversation = [
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
+
+    # --- Apply the chat template for INFERENCE ---
+    formatted_input_prompt = tokenizer.apply_chat_template(
+        inference_conversation,
+        tokenize=False,  # pipeline does this
+        add_generation_prompt=True,  # <--- IMPORTANT FOR INFERENCE
+    )
+
+    outputs = inference_pipe(
+        formatted_input_prompt,
+        max_new_tokens=max_new_tokens,
+        do_sample=True,
+        temperature=temperature,
+        top_p=top_p,
+        top_k=top_k,
+        # eos_token_id=tokenizer.eos_token_id # Pipeline often handles this, but good to be aware
+        # pad_token_id=tokenizer.eos_token_id # Often set pad = eos for open-ended generation
+    )
+
+    # get the generated text
+    encoded_midi_string = outputs[0]["generated_text"]
+
+    # decode the MIDI string
+    midi = decode_tokens_to_midi(encoded_midi_string)
+
+    # save the MIDI to a file
+    midi.write("output.mid")
+
+    # convert the MIDI to a WAV file
+    wav_path = midi_to_wav("output.mid")
+    midi_json = midi_to_json("output.mid")
+    os.remove("output.mid")
+
+    # return the WAV path
+    return wav_path, midi_json
 
 
 if __name__ == "__main__":

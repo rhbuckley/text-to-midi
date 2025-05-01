@@ -36,7 +36,7 @@ lmd_full/*
 checkpoint*/
 
 # wandb
-wandb*
+wandb/*
 artifacts/*
 .DS_Store
 
