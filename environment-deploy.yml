@@ -150,6 +150,7 @@ dependencies:
     - openh264=2.6.0=hc22cd8d_0
     - openssl=3.5.0=h7b32b05_0
     - pango=1.56.3=h9ac818e_1
+    - pyaudio
     - pcre2=10.44=hc749103_2
     - pip=25.1=pyh8b19718_0
     - pixman=0.46.0=h29eaf8c_0
