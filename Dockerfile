@@ -20,5 +20,6 @@ RUN python -m rp_deploy.get_model --project_name text2midi --model_name model_be
 
 # run the handler
 # TODO: move this to src with multiple handlers
-CMD ["python3", "-m", "rp_deploy.handler_gpt2"]
+# CMD ["python3", "-m", "rp_deploy.handler_gpt2"]
+CMD ["conda", "run", "-n", "text2midi", "python", "-m", "rp_deploy.handler_gpt2"]
 
