@@ -12,6 +12,15 @@ wheels/
 # Huggingface
 .Huggingface/
 
+# Unsloth
+unsloth_compiled_cache
+slurm_logs/
+*_model/
+*_models/
+*_finetune/
+*_model_checkpoint/
+.cache*
+
 # Soundfont
 soundfont/
 
