@@ -24,6 +24,7 @@ dependencies:
     - pytorch
     - pytorch-cuda=12.1
     - cudatoolkit
+    - xformers
 
     - pip:
           # --- ML Frameworks & Tools ---

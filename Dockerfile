@@ -17,7 +17,7 @@ WORKDIR /
 COPY . .
 
 # create conda environment
-RUN conda env create -f environment-deploy.yml
+RUN conda env create -f environment-cuda.yml
 
 # run the handler
 # TODO: move this to src with multiple handlers
