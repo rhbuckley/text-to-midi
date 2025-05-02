@@ -1,11 +1,11 @@
 import glob
 import json
 import os
-from midi_utils import midi_to_json, midi_to_wav
-import unsloth
+import unsloth  # important: this must be imported first
 import pretty_midi
 import soundfile as sf
 from datasets import load_dataset
+from src.midi_utils import midi_to_json, midi_to_wav
 
 import torch
 from trl import SFTTrainer
@@ -434,10 +434,10 @@ def finetune(dataset_path: str):
 
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        tokenizer=tokenizer,  # type: ignore
         train_dataset=dataset,
-        dataset_num_proc=2,
-        packing=False,  # Can make training 5x faster for short sequences.
+        dataset_num_proc=2,  # type: ignore
+        packing=False,  # type: ignore # unsloth: Can make training 5x faster for short sequences.
         args=TrainingArguments(
             per_device_train_batch_size=2,
             gradient_accumulation_steps=4,
@@ -530,7 +530,7 @@ def generate(
     )
 
     # get the generated text
-    encoded_midi_string = outputs[0]["generated_text"]
+    encoded_midi_string = outputs[0]["generated_text"]  # type: ignore
 
     # decode the MIDI string
     midi = decode_tokens_to_midi(encoded_midi_string)
