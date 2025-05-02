@@ -374,7 +374,7 @@ def create_jsonl_file(output_dir: str, job_id: int = 0, total_jobs: int = 1):
             f.write(json.dumps(json_obj) + "\n")
 
 
-def finetune(dataset_path: str, checkpoint_path: str = None):
+def finetune(dataset_path: str, resume_from_checkpoint: bool = False):
     os.environ["WANDB_PROJECT"] = "text2midi-llm"  # name your W&B project
     os.environ["WANDB_LOG_MODEL"] = "checkpoint"  # log all model checkpoints
 
@@ -461,8 +461,8 @@ def finetune(dataset_path: str, checkpoint_path: str = None):
         ),
     )
 
-    if checkpoint_path:
-        trainer.train(resume_from_checkpoint=checkpoint_path)
+    if resume_from_checkpoint:
+        trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     else:
         trainer.train()
 
@@ -565,7 +565,7 @@ if __name__ == "__main__":
     parser.add_argument("--jsonl-total-jobs", type=int, default=1)
 
     parser.add_argument("--finetune", action="store_true")
-    parser.add_argument("--checkpoint", type=str, default=None)
+    parser.add_argument("--checkpoint", type=bool, default=False)
     args = parser.parse_args()
 
     if args.jsonl:

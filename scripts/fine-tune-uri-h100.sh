@@ -37,7 +37,4 @@ conda activate text2midi
 
 # --- For Unsloth-Finetune ---
 
-# get latest checkpoint
-CHECKPOINT=$(basename $(ls -t outputs/checkpoint-* | head -n 1))
-
-python -m src.mistral --finetune --checkpoint $CHECKPOINT
+python -m src.mistral --finetune --checkpoint
