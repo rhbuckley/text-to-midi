@@ -1,7 +1,7 @@
+import unsloth  # important: this must be imported first
+import os
 import glob
 import json
-import os
-import unsloth  # important: this must be imported first
 import pretty_midi
 import soundfile as sf
 from datasets import load_dataset
@@ -374,7 +374,7 @@ def create_jsonl_file(output_dir: str, job_id: int = 0, total_jobs: int = 1):
             f.write(json.dumps(json_obj) + "\n")
 
 
-def finetune(dataset_path: str):
+def finetune(dataset_path: str, checkpoint_path: str = None):
     os.environ["WANDB_PROJECT"] = "text2midi-llm"  # name your W&B project
     os.environ["WANDB_LOG_MODEL"] = "checkpoint"  # log all model checkpoints
 
@@ -456,11 +456,15 @@ def finetune(dataset_path: str):
             save_strategy="steps",
             save_steps=50,
             report_to="wandb",  # Use this for WandB etc
+            resume_from_checkpoint="outputs",
+            save_total_limit=5,
         ),
     )
 
-    trainer_stats = trainer.train()
-    # trainer_stats = trainer.train(resume_from_checkpoint = True)
+    if checkpoint_path:
+        trainer.train(resume_from_checkpoint=checkpoint_path)
+    else:
+        trainer.train()
 
     model.save_pretrained("lora_model")  # Local saving
     tokenizer.save_pretrained("lora_model")
@@ -561,6 +565,7 @@ if __name__ == "__main__":
     parser.add_argument("--jsonl-total-jobs", type=int, default=1)
 
     parser.add_argument("--finetune", action="store_true")
+    parser.add_argument("--checkpoint", type=str, default=None)
     args = parser.parse_args()
 
     if args.jsonl:
@@ -571,4 +576,7 @@ if __name__ == "__main__":
         )
 
     if args.finetune:
-        finetune(args.jsonl_dir)
+        if args.checkpoint:
+            finetune(args.jsonl_dir, args.checkpoint)
+        else:
+            finetune(args.jsonl_dir)
