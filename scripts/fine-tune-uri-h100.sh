@@ -36,4 +36,8 @@ conda activate text2midi
 # torchrun --nproc-per-node 1 --master_port=$((RANDOM + 10000)) -m train config/7B.yaml
 
 # --- For Unsloth-Finetune ---
-python -m src.mistral --finetune
+
+# get latest checkpoint
+CHECKPOINT=$(basename $(ls -t outputs/checkpoint-* | head -n 1))
+
+python -m src.mistral --finetune --checkpoint $CHECKPOINT
