@@ -11,6 +11,7 @@ wheels/
 
 # Huggingface
 .Huggingface/
+.cache/*
 
 # Soundfont
 soundfont/
