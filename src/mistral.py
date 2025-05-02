@@ -565,7 +565,7 @@ if __name__ == "__main__":
     parser.add_argument("--jsonl-total-jobs", type=int, default=1)
 
     parser.add_argument("--finetune", action="store_true")
-    parser.add_argument("--checkpoint", type=bool, default=False)
+    parser.add_argument("--checkpoint", action="store_true", default=False)
     args = parser.parse_args()
 
     if args.jsonl:
@@ -576,7 +576,4 @@ if __name__ == "__main__":
         )
 
     if args.finetune:
-        if args.checkpoint:
-            finetune(args.jsonl_dir, args.checkpoint)
-        else:
-            finetune(args.jsonl_dir)
+        finetune(args.jsonl_dir, resume_from_checkpoint=args.checkpoint)
