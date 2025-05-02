@@ -2,6 +2,8 @@ FROM continuumio/miniconda3
 
 # Install fluidsynth AND its system runtime dependencies via apt-get
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
     fluidsynth \
     libsndfile1 \
     libasound2 \
