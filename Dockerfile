@@ -1,6 +1,7 @@
-FROM continuumio/miniconda3
+FROM mambaorg/micromamba
 
 # Install fluidsynth AND its system runtime dependencies via apt-get
+USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
@@ -14,13 +15,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /
 
 # copy all files (w.r.t. .dockerignore)
-COPY . .
+COPY src/ src/
+COPY environment-cuda.yml environment-cuda.yml
 
 # create conda environment
-RUN conda env create -f environment-cuda.yml
+RUN micromamba env create -f environment-cuda.yml
 
 # run the handler
-# TODO: move this to src with multiple handlers
-# CMD ["python3", "-m", "rp_deploy.handler_gpt2"]
-CMD ["conda", "run", "-n", "text2midi", "python", "-m", "src.deploy.handler"]
+CMD ["micromamba", "run", "-n", "text2midi", "python", "-m", "src.deploy.handler"]
 
