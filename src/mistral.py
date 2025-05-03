@@ -206,7 +206,10 @@ def generate(
 
     # create the inference pipeline
     inference_pipe = pipeline(
-        "text-generation", model=model, tokenizer=tokenizer, device=model.device
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        # note: do not specify device, let the `accelerate` library handle it
     )
 
     # --- Prepare inference input ---
