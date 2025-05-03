@@ -18,18 +18,18 @@ WORKDIR /
 # copy all files (w.r.t. .dockerignore)
 COPY src/ requirements.txt ./
 
-# install the dependencies
-RUN pip install uv \
- && uv venv \
- && uv /.venv/bin/pip install -r requirements.txt
+# install uv and create a venv
+RUN pip install uv && uv venv
 
 # update the path to include the venv
 ENV PATH="/.venv/bin:$PATH"
 
+# install the dependencies
+RUN uv pip install -r requirements.txt
+
 # download the mistral model
 RUN python -c "from unsloth import FastLanguageModel; \
                FastLanguageModel.from_pretrained('mistralai/Mistral-7B-v0.1', load_in_4bit=False)"
-
 
 # run the handler
 CMD ["python", "-m", "src.deploy.handler"]
