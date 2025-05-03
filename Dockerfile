@@ -20,6 +20,7 @@ COPY src/ requirements.txt ./
 
 # install the dependencies
 RUN pip install uv \
+ && uv venv \
  && uv pip install -r requirements.txt
 
 # download the mistral model
