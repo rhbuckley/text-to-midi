@@ -7,7 +7,7 @@ python-dotenv==1.1.0
 requests==2.32.3
 runpod==1.7.9
 soundfile==0.13.1
-torch==2.7.0
+torch==2.5.1
 tqdm==4.67.1
 transformers==4.51.3
 unsloth==2025.4.3

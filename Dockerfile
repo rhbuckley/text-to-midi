@@ -16,7 +16,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /
 
 # copy all files (w.r.t. .dockerignore)
-COPY src/ requirements.txt ./
+COPY src/ src/
+COPY requirements.txt requirements.txt
 
 # install uv and create a venv
 RUN pip install uv && uv venv
