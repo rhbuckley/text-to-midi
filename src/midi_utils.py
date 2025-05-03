@@ -111,7 +111,7 @@ def get_soundfont():
     return soundfont_filepath
 
 
-def midi_to_wav(midi_filepath, wav_filepath=None):
+def midi_to_wav(midi_filepath, wav_filepath=None, overwrite=True):
     """
     Converts a MIDI file to a WAV file using fluidsynth.
 
@@ -130,7 +130,7 @@ def midi_to_wav(midi_filepath, wav_filepath=None):
         wav_filepath = midi_filepath.replace(".mid", ".wav")
 
     # Check if the .wav file already exists
-    if os.path.isfile(wav_filepath):
+    if os.path.isfile(wav_filepath) and not overwrite:
         print(f"{wav_filepath} already exists, skipping")
         return wav_filepath
     else:

@@ -1,5 +1,6 @@
 import unsloth
 import base64
+import numpy as np
 from src.config import CONFIG
 from src.mistral import generate
 from src.deploy.utils import get_model
@@ -13,6 +14,17 @@ WANDB_GPT2_VERSION = "latest"
 WANDB_MISTRAL_PROJECT_NAME = "text2midi-llm"
 WANDB_MISTRAL_MODEL_NAME = "model-a0czmwoi"
 WANDB_MISTRAL_VERSION = "latest"
+
+
+def convert_numpy_types(obj):
+    if isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(i) for i in obj]
+    elif isinstance(obj, np.generic):
+        return obj.item()
+    else:
+        return obj
 
 
 def load_gpt2_model():
@@ -119,7 +131,7 @@ def handler(event):
             wav_data = wav_file.read()
             wav_base64 = base64.b64encode(wav_data).decode("utf-8")
 
-    return {"wav_file": wav_base64, "midi_data": midi_json}
+    return {"wav_file": wav_base64, "midi_data": convert_numpy_types(midi_json)}
 
 
 if __name__ == "__main__":
