@@ -28,8 +28,9 @@ ENV PATH="/.venv/bin:$PATH"
 RUN uv pip install -r requirements.txt
 
 # download the mistral model
-# RUN python -c "from unsloth import FastLanguageModel; \
-#                FastLanguageModel.from_pretrained('mistralai/Mistral-7B-v0.1', load_in_4bit=False)"
+RUN uv pip install "huggingface_hub[hf_transfer]" && \
+    python -c "from huggingface_hub import snapshot_download; \
+               snapshot_download(repo_id='unsloth/mistral-7b-v0.3')"
 
 # run the handler
 CMD ["python", "-m", "src.deploy.handler"]
