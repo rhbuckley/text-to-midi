@@ -12,7 +12,7 @@ WANDB_GPT2_MODEL_NAME = "model_best"
 WANDB_GPT2_VERSION = "latest"
 
 WANDB_MISTRAL_PROJECT_NAME = "text2midi-llm"
-WANDB_MISTRAL_MODEL_NAME = "model-a0czmwoi"
+WANDB_MISTRAL_MODEL_NAME = "model-8pbkp52g"
 WANDB_MISTRAL_VERSION = "latest"
 
 
@@ -25,7 +25,7 @@ def convert_numpy_types(obj):
         return obj.item()
     else:
         return obj
-    
+
 
 def download_mistral_model():
     """
@@ -34,8 +34,9 @@ def download_mistral_model():
     checkpoint_path = get_model(
         WANDB_MISTRAL_PROJECT_NAME, WANDB_MISTRAL_MODEL_NAME, WANDB_MISTRAL_VERSION
     )
-    
+
     return checkpoint_path
+
 
 def load_gpt2_model():
     """
