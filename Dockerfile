@@ -21,7 +21,10 @@ COPY src/ requirements.txt ./
 # install the dependencies
 RUN pip install uv \
  && uv venv \
- && uv pip install -r requirements.txt
+ && uv /.venv/bin/pip install -r requirements.txt
+
+# update the path to include the venv
+ENV PATH="/.venv/bin:$PATH"
 
 # download the mistral model
 RUN python -c "from unsloth import FastLanguageModel; \
