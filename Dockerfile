@@ -1,26 +1,32 @@
-FROM mambaorg/micromamba
+FROM pytorch/pytorch:2.5.1-cuda12.1-cudnn9-runtime
 
-# Install fluidsynth AND its system runtime dependencies via apt-get
+# set the HF_HOME to be a volume
+ENV HF_HOME=/huggingface
+
+# Install OS-level dependencies
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
     fluidsynth \
+    libasound-dev \
     libsndfile1 \
-    libasound2 \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # set working directory to be root
 WORKDIR /
 
 # copy all files (w.r.t. .dockerignore)
-COPY src/ src/
-COPY environment-cuda.yml environment-cuda.yml
+COPY src/ requirements.txt ./
 
-# create conda environment
-RUN micromamba env create -f environment-cuda.yml
+# install the dependencies
+RUN pip install uv \
+ && uv pip install -r requirements.txt
+
+# download the mistral model
+RUN python -c "from unsloth import FastLanguageModel; \
+               FastLanguageModel.from_pretrained('mistralai/Mistral-7B-v0.1', load_in_4bit=False)"
+
 
 # run the handler
-CMD ["micromamba", "run", "-n", "text2midi", "python", "-m", "src.deploy.handler"]
+CMD ["python", "-m", "src.deploy.handler"]
 
