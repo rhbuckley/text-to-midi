@@ -1,8 +1,10 @@
 import os
 import torch
+import pretty_midi
 from typing import Optional, TypedDict
 from src.tokenizer import MidiTokenizer
-from src.midi_utils import midi_to_json, midi_to_wav
+from src.midi.parse import midi_to_json
+from src.midi.synthesize import midi_to_wav, pretty_midi_to_base64_wav
 from transformers.models.gpt2 import GPT2LMHeadModel, GPT2Config
 
 
@@ -186,24 +188,21 @@ class TextToMIDIModel:
         generated_sequence = output_sequences[0]
 
         try:
-            # Detokenize the generated sequence (including prompt part)
-            midi_string = self.tokenizer.detokenize(
-                generated_sequence, return_strings=True
-            )
-
             # Save the generated tokens to a MIDI file
             self.tokenizer.detokenize_to_file(generated_sequence, self.config["output"])
             print(f"MIDI file saved to: {self.config['output']}")
 
             # Convert MIDI to wav
-            output_wav_path = midi_to_wav(self.config["output"])
-            print(f"WAV file saved to: {output_wav_path}")
             midi_json = midi_to_json(self.config["output"])
+
+            # open midi as pretty midi
+            midi = pretty_midi.PrettyMIDI(self.config["output"])
+            wav_data = pretty_midi_to_base64_wav(midi)
 
             if cleanup:
                 os.remove(self.config["output"])
 
-            return output_wav_path, midi_json
+            return wav_data, midi_json
         except Exception as e:
             print(f"Error during detokenization or MP3 conversion: {e}")
             return None, None

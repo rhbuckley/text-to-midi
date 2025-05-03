@@ -25,7 +25,17 @@ def convert_numpy_types(obj):
         return obj.item()
     else:
         return obj
+    
 
+def download_mistral_model():
+    """
+    Load the model and tokenizer from a checkpoint.
+    """
+    checkpoint_path = get_model(
+        WANDB_MISTRAL_PROJECT_NAME, WANDB_MISTRAL_MODEL_NAME, WANDB_MISTRAL_VERSION
+    )
+    
+    return checkpoint_path
 
 def load_gpt2_model():
     """
@@ -112,6 +122,7 @@ def handler(event):
             top_p=top_p,
             top_k=top_k,
             max_new_tokens=max_new_tokens,
+            model_checkpoint_path=download_mistral_model(),
         )
 
     else:
@@ -122,16 +133,9 @@ def handler(event):
         return {"error": "Invalid outputs"}
 
     # unpack the outputs
-    wav_path, midi_json = outputs
+    wav_data, midi_json = outputs
 
-    # base64 encode the wav file
-    wav_base64 = ""
-    if wav_path:
-        with open(wav_path, "rb") as wav_file:
-            wav_data = wav_file.read()
-            wav_base64 = base64.b64encode(wav_data).decode("utf-8")
-
-    return {"wav_file": wav_base64, "midi_data": convert_numpy_types(midi_json)}
+    return {"wav_file": wav_data, "midi_data": convert_numpy_types(midi_json)}
 
 
 if __name__ == "__main__":

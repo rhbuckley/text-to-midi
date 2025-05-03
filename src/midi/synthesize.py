@@ -1,83 +1,11 @@
+import base64
 import io
 import os
 import zipfile
 import requests
-import warnings
 import subprocess
 import pretty_midi
-
-
-def parse_midi_pretty(midi_file_path):
-    """
-    Parses a MIDI file using pretty_midi to extract note events.
-
-    Args:
-        midi_file_path (str): Path to the MIDI file.
-
-    Returns:
-        list: A list of dictionaries, where each dictionary represents a note
-              and contains 'pitch', 'velocity', 'time' (start time in seconds),
-              and 'duration' (duration in seconds). Returns empty list on failure.
-              Notes are sorted by start time.
-    """
-    notes = []
-    try:
-        # Load the MIDI file
-        with warnings.catch_warnings():
-            # Suppress common warnings like "Tempo event found at time..." if desired
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-            midi_data = pretty_midi.PrettyMIDI(midi_file_path)
-
-        # Iterate over all instruments in the MIDI file
-        for instrument in midi_data.instruments:
-            # Skip drums if desired (optional)
-            # if instrument.is_drum:
-            #     continue
-
-            # Iterate over all notes played by this instrument
-            for note in instrument.notes:
-                start_time = note.start  # Start time in seconds
-                end_time = note.end  # End time in seconds
-                duration = end_time - start_time
-
-                # Ensure duration is positive (handle potential rounding errors or zero-length notes)
-                if duration > 1e-5:
-                    notes.append(
-                        {
-                            "pitch": note.pitch,
-                            "velocity": note.velocity,
-                            "time": start_time,
-                            "duration": duration,
-                            "instrument": instrument.name,
-                            "program": instrument.program,
-                        }
-                    )
-
-        # Sort notes by start time (important for sequence representation)
-        notes.sort(key=lambda x: x["time"])
-
-    except Exception as e:
-        print(f"Error parsing MIDI file {midi_file_path} with pretty_midi: {e}")
-        return []
-
-    return notes
-
-
-def midi_to_json(midi_filepath):
-    """
-    Converts a MIDI file to a JSON representation using pretty_midi.
-
-    Args:
-        midi_filepath (str): Path to the MIDI file.
-
-    Returns:
-        str: The JSON representation of the MIDI file.
-    """
-    # parse the MIDI file
-    notes = parse_midi_pretty(midi_filepath)
-
-    # return the JSON representation
-    return {"data": notes}
+import soundfile as sf
 
 
 def get_soundfont():
@@ -109,6 +37,54 @@ def get_soundfont():
         print("Soundfont downloaded and extracted to", soundfont_filepath)
 
     return soundfont_filepath
+
+
+def pretty_midi_to_wav(midi: pretty_midi.PrettyMIDI, output_path: str, fs: int = 44100):
+    """
+    Convert a pretty_midi.PrettyMIDI object to a WAV file.
+    """
+    audio = midi.fluidsynth(fs)
+    sf.write(output_path, audio, fs)
+
+
+def pretty_midi_to_base64_wav(midi: pretty_midi.PrettyMIDI, fs: int = 44100) -> str:
+    """
+    Convert a pretty_midi.PrettyMIDI object to a base64 encoded WAV string.
+
+    Args:
+        midi: The pretty_midi.PrettyMIDI object to convert.
+        fs: The desired sample rate for the output audio.
+
+    Returns:
+        A base64 encoded string representing the WAV audio data.
+    """
+    # Synthesize the MIDI data into audio samples (NumPy array)
+    audio_data = midi.fluidsynth(fs=fs)
+
+    # Create an in-memory binary buffer
+    memory_file = io.BytesIO()
+
+    # Write the audio data to the buffer as a WAV file
+    # Explicitly specify the format since there's no filename extension
+    sf.write(memory_file, audio_data, fs, format="WAV")
+
+    # Reset the buffer's position to the beginning
+    # This is crucial before reading the content back
+    memory_file.seek(0)
+
+    # Read the binary WAV data from the buffer
+    wav_bytes = memory_file.read()
+
+    # Close the buffer (optional, but good practice)
+    memory_file.close()
+
+    # Encode the binary WAV data to base64 bytes
+    base64_bytes = base64.b64encode(wav_bytes)
+
+    # Decode the base64 bytes into a string (UTF-8)
+    base64_string = base64_bytes.decode("utf-8")
+
+    return base64_string
 
 
 def midi_to_wav(midi_filepath, wav_filepath=None, overwrite=True):
