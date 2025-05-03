@@ -33,6 +33,7 @@ dependencies:
           - huggingface-hub
           - transformers
           - wandb
+          - runpod
 
           # --- Audio / MIDI Processing ---
           - librosa
