@@ -28,8 +28,8 @@ ENV PATH="/.venv/bin:$PATH"
 RUN uv pip install -r requirements.txt
 
 # download the mistral model
-RUN python -c "from unsloth import FastLanguageModel; \
-               FastLanguageModel.from_pretrained('mistralai/Mistral-7B-v0.1', load_in_4bit=False)"
+# RUN python -c "from unsloth import FastLanguageModel; \
+#                FastLanguageModel.from_pretrained('mistralai/Mistral-7B-v0.1', load_in_4bit=False)"
 
 # run the handler
 CMD ["python", "-m", "src.deploy.handler"]
