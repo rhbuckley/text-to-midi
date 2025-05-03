@@ -10,7 +10,6 @@ soundfile==0.13.1
 torch==2.2.2
 tqdm==4.67.1
 transformers==4.51.3
-trl==0.17.0
 unsloth==2025.4.7
 unsloth-zoo==2025.4.2
 wandb==0.19.10
