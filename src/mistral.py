@@ -22,6 +22,7 @@ BASE_MODEL_NAME = "unsloth/mistral-7b-v0.3"
 MAX_SEQ_LENGTH = 8192
 DTYPE = None
 LOAD_IN_4BIT = False
+CHAT_TEMPLATE = "chatml"
 
 # ================= WANDB CONFIG =================
 
@@ -112,7 +113,7 @@ def finetune(dataset_path: str, resume_from_checkpoint: bool = False):
 
     tokenizer = get_chat_template(
         tokenizer,
-        chat_template="chatml",  # change this to the right chat_template name
+        chat_template=CHAT_TEMPLATE,
     )
 
     def formatting_prompts_func(examples):
@@ -190,6 +191,11 @@ def generate(
         max_seq_length=MAX_SEQ_LENGTH,
         dtype=DTYPE,
         load_in_4bit=LOAD_IN_4BIT,
+    )
+
+    tokenizer = get_chat_template(
+        tokenizer,
+        chat_template=CHAT_TEMPLATE,
     )
 
     # load the model checkpoint
