@@ -6,10 +6,12 @@ ENV HF_HOME=/huggingface
 # Install OS-level dependencies
 USER root
 RUN apt-get update && apt-get install -y \
+    build-essential \
     ffmpeg \
     fluidsynth \
     libasound-dev \
     libsndfile1 \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # set working directory to be root
