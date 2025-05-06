@@ -191,7 +191,7 @@ def generate(
         max_seq_length=MAX_SEQ_LENGTH,
         dtype=DTYPE,
         load_in_4bit=LOAD_IN_4BIT,
-        device_map="auto",
+        device_map={"": 0},
     )
 
     tokenizer = get_chat_template(
