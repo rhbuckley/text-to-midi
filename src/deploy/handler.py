@@ -83,7 +83,8 @@ def handler(event):
                 "temperature": <temperature>,
                 "top_p": <top_p>,
                 "top_k": <top_k>,
-                "max_tokens": <max_new_tokens>
+                "max_tokens": <max_new_tokens>,
+                "return_tokens": <true|false>
             }
         }
         ```
@@ -102,6 +103,8 @@ def handler(event):
     top_p = input_data.get("top_p", 0.9)
     top_k = input_data.get("top_k", 50)
     max_new_tokens = input_data.get("max_tokens", 512)
+    return_tokens = input_data.get("return_tokens", False)
+    return_tokens = return_tokens.lower() == "true"
 
     if not prompt:
         return {"error": "Prompt is required"}
@@ -114,6 +117,7 @@ def handler(event):
             top_p=top_p,
             top_k=top_k,
             max_length=max_new_tokens,
+            return_tokens=return_tokens,
         )
 
     elif model_name == "mistral":
@@ -124,18 +128,24 @@ def handler(event):
             top_k=top_k,
             max_new_tokens=max_new_tokens,
             model_checkpoint_path=download_mistral_model(),
+            return_tokens=return_tokens,
         )
 
     else:
         return {"error": "Invalid model name"}
 
     # check the outputs
-    if not outputs or len(outputs) != 2 or outputs[0] is None or outputs[1] is None:
+    if not outputs or len(outputs) < 2 or outputs[0] is None or outputs[1] is None:
         return {"error": "Invalid outputs"}
 
     # unpack the outputs
-    wav_data, midi_json = outputs
+    wav_data = outputs[0]
+    midi_json = outputs[1]
 
+    if return_tokens and len(outputs) == 3:
+        encoded_midi_string = outputs[2]
+        return {"wav_file": wav_data, "midi_data": convert_numpy_types(midi_json), "encoded_midi_string": encoded_midi_string}
+    
     return {"wav_file": wav_data, "midi_data": convert_numpy_types(midi_json)}
 
 

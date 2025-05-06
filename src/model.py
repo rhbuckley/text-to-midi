@@ -138,6 +138,7 @@ class TextToMIDIModel:
         top_k: Optional[int] = None,
         top_p: Optional[float] = None,
         cleanup: bool = False,
+        return_tokens: bool = False,
     ):
         """
         Generate a MIDI sequence from a text prompt.
@@ -201,6 +202,9 @@ class TextToMIDIModel:
 
             if cleanup:
                 os.remove(self.config["output"])
+
+            if return_tokens:
+                return wav_data, midi_json, generated_sequence
 
             return wav_data, midi_json
         except Exception as e:

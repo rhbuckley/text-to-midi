@@ -181,6 +181,7 @@ def generate(
     max_new_tokens: int = 512,
     save_to_disk: bool = False,
     model_checkpoint_path: str = "lora_model",
+    return_tokens: bool = False,
 ):
     """
     Generate a MIDI from a text prompt using a trained model.
@@ -259,6 +260,9 @@ def generate(
     if save_to_disk:
         midi.write("output.mid")
         midi_to_wav("output.mid")
+
+    if return_tokens:
+        return wav_data, midi_json, encoded_midi_string
 
     # return the WAV path
     return wav_data, midi_json
