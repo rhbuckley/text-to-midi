@@ -1,1 +1,1 @@
-salloc --partition=gpu-preempt --cpus-per-task=8 --mem=24G --gres=gpu:2080ti:1
+salloc --partition=gpu-preempt --cpus-per-task=8 --mem=24G --gres=gpu:a16:1
