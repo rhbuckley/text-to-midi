@@ -130,6 +130,9 @@ def decode_tokens_to_midi(
     Returns:
         pretty_midi.PrettyMIDI: The decoded MIDI object.
     """
+    if isinstance(tokens, str):
+        tokens = tokens.split(" ")
+
     midi = pretty_midi.PrettyMIDI()
     instruments = {}  # Dictionary to hold instruments {program: Instrument}
     current_time = 0.0
